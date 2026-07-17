@@ -1,4 +1,6 @@
 export { ArrowRightIcon } from './ArrowRightIcon';
+export { CheckIcon } from './CheckIcon';
+export { ChevronLeftIcon } from './ChevronLeftIcon';
 export { CoachIcon } from './CoachIcon';
 export { HomeIcon } from './HomeIcon';
 export { ProfileIcon } from './ProfileIcon';

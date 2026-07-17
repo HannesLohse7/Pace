@@ -4,18 +4,15 @@ import { colors } from '@/shared/theme/colors';
 
 import type { IconProps } from './types';
 
-export function ProgressIcon({
-  size = 22,
-  color = colors.color.quaternary,
-  strokeWidth = 2.2,
-}: IconProps) {
+export function CheckIcon({ size = 10, color = colors.color.inverse, strokeWidth = 3 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M5 20V12M12 20V6M19 20v-9"
+        d="M5 12l5 5 9-11"
         stroke={color}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
