@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { RaceScreen } from '@/features/onboarding/screens/RaceScreen';
 
 export default function RaceRoute() {
-  return <OnboardingStepPlaceholder step="race" />;
+  return <RaceScreen />;
 }
