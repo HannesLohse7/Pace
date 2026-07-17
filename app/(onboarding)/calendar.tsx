@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { CalendarScreen } from '@/features/onboarding/screens/CalendarScreen';
 
 export default function CalendarRoute() {
-  return <OnboardingStepPlaceholder step="calendar" />;
+  return <CalendarScreen />;
 }
