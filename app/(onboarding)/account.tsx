@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { AccountScreen } from '@/features/onboarding/screens/AccountScreen';
 
 export default function AccountRoute() {
-  return <OnboardingStepPlaceholder step="account" />;
+  return <AccountScreen />;
 }
