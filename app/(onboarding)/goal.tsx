@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { GoalScreen } from '@/features/onboarding/screens/GoalScreen';
 
 export default function GoalRoute() {
-  return <OnboardingStepPlaceholder step="goal" />;
+  return <GoalScreen />;
 }
