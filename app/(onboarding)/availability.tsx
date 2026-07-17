@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { AvailabilityScreen } from '@/features/onboarding/screens/AvailabilityScreen';
 
 export default function AvailabilityRoute() {
-  return <OnboardingStepPlaceholder step="availability" />;
+  return <AvailabilityScreen />;
 }
