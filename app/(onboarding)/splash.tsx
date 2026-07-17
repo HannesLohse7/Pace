@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { SplashScreen } from '@/features/onboarding/screens/SplashScreen';
 
 export default function SplashRoute() {
-  return <OnboardingStepPlaceholder step="splash" />;
+  return <SplashScreen />;
 }
