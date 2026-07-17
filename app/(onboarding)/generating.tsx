@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { GeneratingScreen } from '@/features/onboarding/screens/GeneratingScreen';
 
 export default function GeneratingRoute() {
-  return <OnboardingStepPlaceholder step="generating" />;
+  return <GeneratingScreen />;
 }
