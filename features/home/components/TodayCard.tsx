@@ -53,7 +53,9 @@ export function TodayCard({ workout, onPress, onStartWorkout }: TodayCardProps) 
         </View>
       </View>
 
-      <AppText className="mt-md max-w-[290px] text-body text-color-secondary">{workout.description}</AppText>
+      <AppText className="mt-md max-w-[290px] text-body text-color-secondary">
+        {workout.description}
+      </AppText>
 
       <View className="mt-xl self-start">
         <PrimaryButton

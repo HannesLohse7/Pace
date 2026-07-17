@@ -34,7 +34,14 @@ export function ProgressRing({
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        <Circle cx={50} cy={50} r={radius} fill="none" stroke={trackColor} strokeWidth={strokeWidth} />
+        <Circle
+          cx={50}
+          cy={50}
+          r={radius}
+          fill="none"
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+        />
         <Circle
           cx={50}
           cy={50}

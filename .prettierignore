@@ -1,0 +1,9 @@
+design/
+node_modules/
+.expo/
+dist/
+package-lock.json
+
+# Prose/content, not application source — not ours to reformat
+docs/
+assets/

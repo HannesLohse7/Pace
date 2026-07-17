@@ -13,11 +13,19 @@ export interface WeekStripProps {
 function styleFor(state: WeekDayState) {
   switch (state) {
     case 'done':
-      return { dotColor: colors.color.primary, textColor: colors.color.primary, weight: '500' as const };
+      return {
+        dotColor: colors.color.primary,
+        textColor: colors.color.primary,
+        weight: '500' as const,
+      };
     case 'today':
       return { dotColor: colors.accent, textColor: colors.accent, weight: '700' as const };
     case 'upcoming':
-      return { dotColor: colors.neutral[100], textColor: colors.neutral[300], weight: '500' as const };
+      return {
+        dotColor: colors.neutral[100],
+        textColor: colors.neutral[300],
+        weight: '500' as const,
+      };
   }
 }
 
@@ -31,7 +39,11 @@ export function WeekStrip({ days, summary }: WeekStripProps) {
           return (
             <View key={day.id} className="items-center gap-[7px]">
               <SportDot color={dotColor} size={9} />
-              <AppText mono className="text-[10px]" style={{ color: textColor, fontWeight: weight }}>
+              <AppText
+                mono
+                className="text-[10px]"
+                style={{ color: textColor, fontWeight: weight }}
+              >
                 {day.letter}
               </AppText>
             </View>

@@ -51,7 +51,10 @@ export function HomeScreen({ onOpenRecovery, onOpenCoach, onOpenWorkout }: HomeS
         </Pressable>
       </View>
 
-      <Pressable onPress={onOpenCoach} className="mx-screen-x mt-[18px] border-t border-border-faint pt-[14px]">
+      <Pressable
+        onPress={onOpenCoach}
+        className="mx-screen-x mt-[18px] border-t border-border-faint pt-[14px]"
+      >
         <AppText className="text-body-sm text-color-secondary">{coachMessage}</AppText>
       </Pressable>
 

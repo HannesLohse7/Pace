@@ -5,7 +5,12 @@
  */
 import { colors } from '@/shared/theme/colors';
 
-import type { RaceCountdown, TodayWorkout, UpcomingWorkoutItem, WeekDayStatus } from '../types/home';
+import type {
+  RaceCountdown,
+  TodayWorkout,
+  UpcomingWorkoutItem,
+  WeekDayStatus,
+} from '../types/home';
 
 export const dateLabel = 'TUESDAY, JUL 15';
 export const athleteFirstName = 'Alex';

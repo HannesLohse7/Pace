@@ -1,6 +1,10 @@
 import { Platform, Text, type TextProps } from 'react-native';
 
-const MONO_FONT_FAMILY = Platform.select({ ios: 'ui-monospace', android: 'monospace', default: 'monospace' });
+const MONO_FONT_FAMILY = Platform.select({
+  ios: 'ui-monospace',
+  android: 'monospace',
+  default: 'monospace',
+});
 
 export interface AppTextProps extends TextProps {
   /**

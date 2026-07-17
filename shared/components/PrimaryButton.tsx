@@ -18,7 +18,12 @@ export function PrimaryButton({ label, onPress, icon, disabled, className }: Pri
   const scale = useRef(new Animated.Value(1)).current;
 
   const animateTo = (value: number) => {
-    Animated.spring(scale, { toValue: value, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+    Animated.spring(scale, {
+      toValue: value,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 0,
+    }).start();
   };
 
   return (
