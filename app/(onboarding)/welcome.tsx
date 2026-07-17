@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { WelcomeScreen } from '@/features/onboarding/screens/WelcomeScreen';
 
 export default function WelcomeRoute() {
-  return <OnboardingStepPlaceholder step="welcome" />;
+  return <WelcomeScreen />;
 }
