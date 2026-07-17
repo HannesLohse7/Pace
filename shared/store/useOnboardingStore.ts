@@ -147,11 +147,25 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
 
   setWeeklyHours: (weeklyHours) => set({ weeklyHours }),
   toggleTrainingDay: (day) =>
-    set((s) => ({
-      trainingDays: s.trainingDays.includes(day)
+    set((s) => {
+      const trainingDays = s.trainingDays.includes(day)
         ? s.trainingDays.filter((d) => d !== day)
-        : [...s.trainingDays, day],
-    })),
+        : [...s.trainingDays, day];
+      // Keeps longWorkoutDay a member of trainingDays at all times — the
+      // Availability screen's long-workout-day picker only ever shows
+      // currently-selected days as options (matching the source, which
+      // derives that picker's options from trainDays.filter(...)), so
+      // without this, deselecting the day currently assigned as the long
+      // workout day would leave the store pointing at a day that's no
+      // longer a valid option anywhere in the UI. Falls back to the
+      // stale value only when trainingDays is empty — harmless, since
+      // Availability's "select at least one day" validation blocks
+      // continuing in that state regardless of what longWorkoutDay holds.
+      const longWorkoutDay = trainingDays.includes(s.longWorkoutDay)
+        ? s.longWorkoutDay
+        : (trainingDays[0] ?? s.longWorkoutDay);
+      return { trainingDays, longWorkoutDay };
+    }),
   setLongWorkoutDay: (longWorkoutDay) => set({ longWorkoutDay }),
   setPreferredTimeOfDay: (preferredTimeOfDay) => set({ preferredTimeOfDay }),
 
