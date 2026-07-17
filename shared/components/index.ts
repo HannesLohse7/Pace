@@ -1,5 +1,7 @@
 export { AppText } from './AppText';
 export type { AppTextProps } from './AppText';
+export { ComingSoonPlaceholder } from './ComingSoonPlaceholder';
+export type { ComingSoonPlaceholderProps } from './ComingSoonPlaceholder';
 export { Divider } from './Divider';
 export type { DividerProps } from './Divider';
 export { PrimaryButton } from './PrimaryButton';
