@@ -15,7 +15,7 @@ export function GoalScreen() {
   const selectGoal = useOnboardingStore((s) => s.selectGoal);
 
   return (
-    <OnboardingStepShell step="goal" title="What are you training for?">
+    <OnboardingStepShell step="goal" title="What are you training for?" canContinue={goal !== null}>
       <View className="mt-[22px]">
         {GOAL_OPTIONS.map((option) => {
           const isSelected = goal === option;

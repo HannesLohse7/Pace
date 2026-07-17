@@ -5,13 +5,15 @@ import { colors } from '@/shared/theme/colors';
 
 export interface OnboardingTextFieldProps extends Pick<
   TextInputProps,
-  'value' | 'onChangeText' | 'placeholder' | 'keyboardType' | 'autoCapitalize'
+  'value' | 'onChangeText' | 'placeholder' | 'keyboardType' | 'autoCapitalize' | 'onBlur'
 > {
   label: string;
+  /** When set, shows this message below the input and switches the underline to the danger color. */
+  error?: string;
 }
 
 /** Mono label above a bottom-border-only input — used by account (name/email) and race (race name). */
-export function OnboardingTextField({ label, ...inputProps }: OnboardingTextFieldProps) {
+export function OnboardingTextField({ label, error, ...inputProps }: OnboardingTextFieldProps) {
   return (
     <View>
       <AppText
@@ -23,8 +25,11 @@ export function OnboardingTextField({ label, ...inputProps }: OnboardingTextFiel
       <TextInput
         {...inputProps}
         placeholderTextColor={colors.color.quaternary}
-        className="border-b border-border-strong pb-[10px] pt-[6px] text-[16px] text-color-primary"
+        className={`border-b pb-[10px] pt-[6px] text-[16px] text-color-primary ${
+          error ? 'border-danger' : 'border-border-strong'
+        }`}
       />
+      {error && <AppText className="mt-[6px] text-[12px] text-danger">{error}</AppText>}
     </View>
   );
 }
