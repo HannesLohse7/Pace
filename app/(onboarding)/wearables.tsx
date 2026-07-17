@@ -1,5 +1,5 @@
-import { OnboardingStepPlaceholder } from '@/features/onboarding/components/OnboardingStepPlaceholder';
+import { WearablesScreen } from '@/features/onboarding/screens/WearablesScreen';
 
 export default function WearablesRoute() {
-  return <OnboardingStepPlaceholder step="wearables" />;
+  return <WearablesScreen />;
 }
