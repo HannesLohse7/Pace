@@ -10,13 +10,17 @@ export default function RootLayout() {
     <ThemeProvider>
       <SafeAreaProvider>
         {/*
-          (tabs) is the only route today. Future overlay screens (workout
-          detail, celebration, coach review — Milestone 3) should be added as
-          sibling Stack screens here with options={{ presentation: 'modal' }}
-          (or 'transparentModal'/'containedModal'), so they layer above the
-          tab bar instead of requiring another navigation-model rework.
+          Overlay screens (edit-profile now; workout detail, celebration,
+          coach review still to come in Milestone 3) are added as sibling
+          Stack screens here with presentation: 'modal', so they layer
+          above the tab bar instead of requiring another navigation-model
+          rework. Everything else stays auto-discovered with default
+          (push) behavior — only screens that need non-default
+          presentation get an explicit entry.
         */}
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
+        </Stack>
       </SafeAreaProvider>
     </ThemeProvider>
   );

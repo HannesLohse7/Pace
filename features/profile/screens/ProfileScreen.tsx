@@ -1,21 +1,13 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ConnectToggleBadge } from '@/features/onboarding/components/ConnectToggleBadge';
 import { AppText, Screen, SettingsRow, Switch } from '@/shared/components';
-import { useSettingsStore } from '@/shared/store';
+import { useProfileStore, useSettingsStore } from '@/shared/store';
 import { useThemeColors, useThemeOverride } from '@/shared/theme/ThemeProvider';
 
-import { athleteProfile } from '../data/mockProfileData';
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
+import { getInitials } from '../utils/getInitials';
 
 type ConnectedServiceKey =
   'googleCalendar' | 'appleCalendar' | 'appleHealth' | 'garmin' | 'coros' | 'strava' | 'zwift';
@@ -57,16 +49,20 @@ const INITIAL_CONNECTED_SERVICES: Record<ConnectedServiceKey, boolean> = {
 
 /**
  * Profile shell — Milestone 3 Checkpoint 1 built the header, Race Goal
- * card, and Dark Mode row. Checkpoint 2 adds the rest of the design
- * export's settings list: Units, Notifications, Connected Services, and
- * Privacy.
+ * card, and Dark Mode row. Checkpoint 2 added Units, Notifications,
+ * Connected Services, and Privacy. Checkpoint 3 adds Edit Profile (real —
+ * navigates to a modal, actually mutates `useProfileStore`) and Sign Out
+ * (inert — no auth/session concept exists yet, so a working sign-out
+ * would simulate a feature that isn't there).
  *
  * Subscription isn't built — not asked for this checkpoint and there's
  * no real entitlement/subscription state to show yet.
  */
 export function ProfileScreen() {
+  const router = useRouter();
   const colors = useThemeColors();
   const { isDarkOverridden, setDarkOverride } = useThemeOverride();
+  const profile = useProfileStore((s) => s.profile);
   const units = useSettingsStore((s) => s.units);
   const setUnits = useSettingsStore((s) => s.setUnits);
 
@@ -85,18 +81,16 @@ export function ProfileScreen() {
       <View className="flex-row items-center gap-md px-screen-x">
         <View className="h-16 w-16 items-center justify-center rounded-full bg-tint">
           <AppText className="text-[20px] font-bold text-accent">
-            {getInitials(athleteProfile.name)}
+            {getInitials(profile.name)}
           </AppText>
         </View>
         <View>
-          <AppText className="text-[19px] font-bold text-color-primary">
-            {athleteProfile.name}
-          </AppText>
+          <AppText className="text-[19px] font-bold text-color-primary">{profile.name}</AppText>
           <AppText className="mt-[3px] text-caption text-color-tertiary">
-            {athleteProfile.weeklyHours} hrs/wk · {athleteProfile.disciplines} disciplines
+            {profile.weeklyHours} hrs/wk · {profile.disciplines} disciplines
           </AppText>
           <AppText className="mt-[3px] text-caption-sm text-color-tertiary">
-            Member since {athleteProfile.joinDate}
+            Member since {profile.joinDate}
           </AppText>
         </View>
       </View>
@@ -108,11 +102,9 @@ export function ProfileScreen() {
         >
           RACE GOAL
         </AppText>
-        <AppText className="text-[16px] font-bold text-color-inverse">
-          {athleteProfile.raceName}
-        </AppText>
+        <AppText className="text-[16px] font-bold text-color-inverse">{profile.raceName}</AppText>
         <AppText className="mt-[3px] text-[12px] text-color-inverse-secondary">
-          {athleteProfile.raceDate} · {athleteProfile.daysToRace} days
+          {profile.raceDate} · {profile.daysToRace} days
         </AppText>
       </View>
 
@@ -166,6 +158,26 @@ export function ProfileScreen() {
         <SettingsRow label="Privacy">
           <AppText className="text-[12.5px] text-color-quaternary">Coming soon</AppText>
         </SettingsRow>
+      </View>
+
+      <AppText className="mb-xs mt-2xl px-screen-x text-eyebrow text-color-tertiary">
+        ACCOUNT
+      </AppText>
+      <View>
+        <SettingsRow label="Edit Profile" onPress={() => router.push('/edit-profile')}>
+          <AppText className="text-[16px] text-color-quaternary">›</AppText>
+        </SettingsRow>
+
+        {/*
+          Inert by design: there's no auth/session concept yet, so a
+          working sign-out would simulate a feature that doesn't exist.
+          Tapping this does nothing — no onPress at all, not just a
+          no-op handler, so it's verifiably a dead tap target rather
+          than something that looks wired but silently swallows taps.
+        */}
+        <View className="border-t border-border px-screen-x py-md">
+          <AppText className="text-center text-[14px] font-semibold text-danger">Sign Out</AppText>
+        </View>
       </View>
     </Screen>
   );
