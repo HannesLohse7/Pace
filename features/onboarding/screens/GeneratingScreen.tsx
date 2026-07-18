@@ -4,7 +4,7 @@ import { Animated, Easing, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { AppText, Screen } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 import { useOnboardingNavigation } from '../hooks/useOnboardingNavigation';
 
@@ -63,6 +63,7 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 export function GeneratingScreen() {
   useOnboardingNavigation('generating');
   const router = useRouter();
+  const colors = useThemeColors();
   const [messageIndex, setMessageIndex] = useState(0);
   const progress = useRef(new Animated.Value(0)).current;
 

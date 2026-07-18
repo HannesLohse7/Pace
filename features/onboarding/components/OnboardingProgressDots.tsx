@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface OnboardingProgressDotsProps {
   /** Index into ONBOARDING_STEPS (0 = splash .. 8 = generating). */
@@ -18,6 +18,7 @@ const DOT_COUNT = 6;
  * enumerate the same 9 steps in the same order.
  */
 export function OnboardingProgressDots({ currentStepIndex }: OnboardingProgressDotsProps) {
+  const colors = useThemeColors();
   return (
     <View className="mb-[22px] flex-row gap-[5px]">
       {Array.from({ length: DOT_COUNT }, (_, i) => {

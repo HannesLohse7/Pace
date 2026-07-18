@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppText, PrimaryButton, SportDot } from '@/shared/components';
 import { ArrowRightIcon } from '@/shared/components/icons';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 import { shadows } from '@/shared/theme/shadows';
 
 import type { TodayWorkout } from '../types/home';
@@ -22,6 +22,7 @@ export interface TodayCardProps {
  * it as "just another card".
  */
 export function TodayCard({ workout, onPress, onStartWorkout }: TodayCardProps) {
+  const colors = useThemeColors();
   return (
     <Pressable
       onPress={onPress}

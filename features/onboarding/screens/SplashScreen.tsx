@@ -4,13 +4,23 @@ import { Pressable } from 'react-native';
 
 import { AppText, Screen } from '@/shared/components';
 import { ProgressIcon } from '@/shared/components/icons';
-import { colors } from '@/shared/theme/colors';
+import { darkColors } from '@/shared/theme/colors';
 
 import { useOnboardingNavigation } from '../hooks/useOnboardingNavigation';
 
 const AUTO_ADVANCE_MS = 1600;
 
-/** Full-bleed dark splash — taps through immediately, or auto-advances after 1.6s, matching the source. */
+/**
+ * Full-bleed dark splash — taps through immediately, or auto-advances
+ * after 1.6s, matching the source.
+ *
+ * Deliberately uses `darkColors` directly, not `useThemeColors()`: this
+ * screen's background (`bg-surface-dark`) is a fixed dark hero regardless
+ * of system light/dark preference, so its foreground colors need to stay
+ * paired with the dark palette specifically — resolving them against the
+ * live scheme would wash out (light-mode tertiary gray on a near-black
+ * background) whenever the OS is in light mode.
+ */
 export function SplashScreen() {
   const { goNext } = useOnboardingNavigation('splash');
   const router = useRouter();
@@ -23,14 +33,14 @@ export function SplashScreen() {
   return (
     <Screen edges={[]} className="bg-surface-dark">
       <Pressable onPress={goNext} className="flex-1 items-center justify-center gap-md">
-        <ProgressIcon size={40} color={colors.color.inverse} strokeWidth={2.4} />
+        <ProgressIcon size={40} color={darkColors.color.inverse} strokeWidth={2.4} />
         <AppText className="text-[24px] font-bold tracking-[-0.4px] text-color-inverse">
           Pace
         </AppText>
         <AppText
           mono
           className="text-[11px] font-semibold tracking-[1.4px]"
-          style={{ color: '#7C8493' }}
+          style={{ color: darkColors.color.tertiary }}
         >
           ADAPTIVE ENDURANCE COACHING
         </AppText>
@@ -48,7 +58,7 @@ export function SplashScreen() {
           className="items-center pb-lg"
           hitSlop={12}
         >
-          <AppText className="text-[12px] text-color-tertiary" style={{ color: '#7C8493' }}>
+          <AppText className="text-[12px]" style={{ color: darkColors.color.tertiary }}>
             Skip to Home (dev)
           </AppText>
         </Pressable>

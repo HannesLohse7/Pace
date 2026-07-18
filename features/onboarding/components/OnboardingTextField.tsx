@@ -1,7 +1,7 @@
 import { TextInput, type TextInputProps, View } from 'react-native';
 
 import { AppText } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface OnboardingTextFieldProps extends Pick<
   TextInputProps,
@@ -14,6 +14,7 @@ export interface OnboardingTextFieldProps extends Pick<
 
 /** Mono label above a bottom-border-only input — used by account (name/email) and race (race name). */
 export function OnboardingTextField({ label, error, ...inputProps }: OnboardingTextFieldProps) {
+  const colors = useThemeColors();
   return (
     <View>
       <AppText

@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 import { spacing } from '@/shared/theme/spacing';
 
 import { AppText } from './AppText';
@@ -30,6 +30,7 @@ export function TabBar({ activeTab, onTabPress }: TabBarProps) {
   // Real devices vary (notch/Dynamic Island/no inset at all on older
   // hardware or Android), so this uses the actual safe-area inset plus a
   // small fixed breathing space instead of that static guess.
+  const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const paddingBottom = insets.bottom + spacing['2xs'];
 

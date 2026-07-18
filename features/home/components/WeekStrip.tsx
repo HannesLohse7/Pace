@@ -1,7 +1,8 @@
 import { View } from 'react-native';
 
 import { AppText, SportDot } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
+import type { ColorPalette } from '@/shared/theme/colors';
 
 import type { WeekDayState, WeekDayStatus } from '../types/home';
 
@@ -10,7 +11,7 @@ export interface WeekStripProps {
   summary: string;
 }
 
-function styleFor(state: WeekDayState) {
+function styleFor(state: WeekDayState, colors: ColorPalette) {
   switch (state) {
     case 'done':
       return {
@@ -31,11 +32,12 @@ function styleFor(state: WeekDayState) {
 
 /** Training status / week-at-a-glance strip. */
 export function WeekStrip({ days, summary }: WeekStripProps) {
+  const colors = useThemeColors();
   return (
     <View className="mt-2xl px-screen-x">
       <View className="flex-row justify-between">
         {days.map((day) => {
-          const { dotColor, textColor, weight } = styleFor(day.state);
+          const { dotColor, textColor, weight } = styleFor(day.state, colors);
           return (
             <View key={day.id} className="items-center gap-[7px]">
               <SportDot color={dotColor} size={9} />

@@ -5,10 +5,19 @@
  * built-in TypeScript type-stripping lets this plain .js config require()
  * a .ts file directly, as long as it only uses erasable syntax like
  * `as const`.)
+ *
+ * Colors are registered as `rgb(var(--color-...))` references
+ * (`buildTailwindColorTree()`), not literal hex values — `ThemeProvider`
+ * sets those CSS variables at runtime based on `useColorScheme()`, so
+ * every `bg-surface`/`text-color-primary`/etc. className automatically
+ * resolves to the active light/dark palette instead of a value baked in
+ * at build time.
  */
-const { colors } = require('./shared/theme/colors.ts');
+const { buildTailwindColorTree } = require('./shared/theme/colors.ts');
 const { spacing: spacingTokens } = require('./shared/theme/spacing.ts');
 const { typography } = require('./shared/theme/typography.ts');
+
+const colors = buildTailwindColorTree();
 
 const spacing = Object.fromEntries(
   Object.entries(spacingTokens).map(([key, value]) => [key, `${value}px`]),

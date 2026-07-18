@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface ProgressRingProps {
   /** Rendered width/height in px. Defaults to 58 (the recovery ring size). */
@@ -23,10 +23,13 @@ export function ProgressRing({
   radius = 42,
   strokeWidth = 7,
   progress,
-  color = colors.success,
-  trackColor = colors['border-soft'],
+  color,
+  trackColor,
   children,
 }: ProgressRingProps) {
+  const colors = useThemeColors();
+  const resolvedColor = color ?? colors.success;
+  const resolvedTrackColor = trackColor ?? colors['border-soft'];
   const circumference = 2 * Math.PI * radius;
   const dash = (circumference * Math.min(Math.max(progress, 0), 100)) / 100;
   const offset = circumference - dash;
@@ -39,7 +42,7 @@ export function ProgressRing({
           cy={50}
           r={radius}
           fill="none"
-          stroke={trackColor}
+          stroke={resolvedTrackColor}
           strokeWidth={strokeWidth}
         />
         <Circle
@@ -47,13 +50,12 @@ export function ProgressRing({
           cy={50}
           r={radius}
           fill="none"
-          stroke={color}
+          stroke={resolvedColor}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference}`}
           strokeDashoffset={offset}
-          rotation={-90}
-          origin="50, 50"
+          transform="rotate(-90 50 50)"
         />
       </Svg>
       {children ? (

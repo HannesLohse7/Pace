@@ -5,17 +5,17 @@
  * This is the single source of truth: `tailwind.config.js` imports this
  * file directly rather than redefining these values, and components that
  * need a raw color value (SVG stroke/fill props, RN shadow colors, etc.,
- * where a Tailwind className can't reach) import it too.
+ * where a Tailwind className can't reach) use `useThemeColors()` from
+ * `./ThemeProvider` instead.
  *
  * `docs/PROJECT_RULES.md` requires dark mode support "from day one," so
  * `darkColors` scaffolds a dark equivalent for every light token below —
- * `ColorPalette` enforces both palettes share the exact same shape, so
- * either can be swapped in wherever `colors` is used today. These are
- * first-pass, reasonable values, not a finished design pass; treat them
- * as placeholders pending real dark-mode design review. Runtime light/dark
- * switching is NOT wired up anywhere yet — `colors` still resolves to
- * `lightColors` unconditionally, so nothing about the current UI changes.
- * That wiring is a future milestone.
+ * `ColorPalette` enforces both palettes share the exact same shape. These
+ * are first-pass, reasonable values, not a finished design pass; treat
+ * them as placeholders pending real dark-mode design review. Runtime
+ * light/dark switching (system-preference only, via `useColorScheme()`)
+ * is wired in `./ThemeProvider` — see that file for how `buildCssVars`/
+ * `buildTailwindColorTree` below are actually used.
  */
 
 export interface ColorPalette {
@@ -174,7 +174,76 @@ export type ColorScheme = 'light' | 'dark';
 
 export const colorSchemes = { light: lightColors, dark: darkColors } as const;
 
-/** Currently always the light palette — see file header. */
+/**
+ * Static light-palette export, still used by the handful of non-component
+ * modules that can't call a hook (e.g. `mockHomeData.ts`) — safe there only
+ * because every value those modules read (`sport.*`) is identical across
+ * `lightColors`/`darkColors` by design. Everywhere else that needs a color
+ * scheme's actual runtime value should use `useThemeColors()` from
+ * `./ThemeProvider` instead, which resolves to the live scheme.
+ */
 export const colors = lightColors;
 
 export type Colors = typeof colors;
+
+function hexToRgbTriplet(hex: string): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+/** Recursively flattens a nested palette into `{ 'neutral-100': '#E4E4E0', 'color-primary': '#111318', ... }`. */
+function flattenPalette(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const flatKey = prefix ? `${prefix}-${key}` : key;
+    if (typeof value === 'string') {
+      out[flatKey] = value;
+    } else if (typeof value === 'object' && value !== null) {
+      Object.assign(out, flattenPalette(value as Record<string, unknown>, flatKey));
+    }
+  }
+  return out;
+}
+
+/**
+ * Builds the `--color-*` CSS custom properties for a palette, as space-
+ * separated RGB triplets (`"67 56 202"`, not `"#4338CA"`) so Tailwind's
+ * `rgb(var(--x))` color-function syntax can consume them. Used by
+ * `ThemeProvider` with NativeWind's `vars()` to make every existing
+ * `bg-surface`/`text-color-primary`/etc. className resolve to the active
+ * color scheme without changing any of those classNames.
+ */
+export function buildCssVars(palette: ColorPalette): Record<string, string> {
+  const flat = flattenPalette(palette as unknown as Record<string, unknown>);
+  const cssVars: Record<string, string> = {};
+  for (const [key, hex] of Object.entries(flat)) {
+    cssVars[`color-${key}`] = hexToRgbTriplet(hex);
+  }
+  return cssVars;
+}
+
+/**
+ * Rebuilds `lightColors`' nested shape with every leaf replaced by a
+ * `rgb(var(--color-...))` reference instead of a literal hex value — this
+ * is what `tailwind.config.js` registers as `theme.extend.colors`, so
+ * className color resolution happens at the CSS-variable layer (set by
+ * `ThemeProvider`) instead of being baked into the bundle at build time.
+ */
+export function buildTailwindColorTree(): unknown {
+  function walk(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const flatKey = prefix ? `${prefix}-${key}` : key;
+      if (typeof value === 'string') {
+        out[key] = `rgb(var(--color-${flatKey}))`;
+      } else if (typeof value === 'object' && value !== null) {
+        out[key] = walk(value as Record<string, unknown>, flatKey);
+      }
+    }
+    return out;
+  }
+  return walk(lightColors as unknown as Record<string, unknown>);
+}

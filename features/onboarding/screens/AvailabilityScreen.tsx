@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppText } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 import { useOnboardingStore } from '@/shared/store';
 import type { PreferredTimeOfDay, TrainingDay } from '@/shared/store';
 
@@ -45,6 +45,7 @@ function capitalize(day: TrainingDay): string {
  * needed for it the way the "select at least one day" case needs one.
  */
 export function AvailabilityScreen() {
+  const colors = useThemeColors();
   const weeklyHours = useOnboardingStore((s) => s.weeklyHours);
   const trainingDays = useOnboardingStore((s) => s.trainingDays);
   const longWorkoutDay = useOnboardingStore((s) => s.longWorkoutDay);

@@ -5,7 +5,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 
 import { AppText } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface OnboardingDateFieldProps {
   label: string;
@@ -51,6 +51,7 @@ export function OnboardingDateField({
   onChange,
   placeholder,
 }: OnboardingDateFieldProps) {
+  const colors = useThemeColors();
   const dateValue = fromIsoDate(value);
 
   const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {

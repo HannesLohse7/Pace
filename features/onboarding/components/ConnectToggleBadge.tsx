@@ -1,7 +1,7 @@
 import { Pressable } from 'react-native';
 
 import { AppText } from '@/shared/components';
-import { colors } from '@/shared/theme/colors';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface ConnectToggleBadgeProps {
   connected: boolean;
@@ -14,6 +14,7 @@ export interface ConnectToggleBadgeProps {
  * rather than duplicated seven times.
  */
 export function ConnectToggleBadge({ connected, onPress }: ConnectToggleBadgeProps) {
+  const colors = useThemeColors();
   return (
     <Pressable
       onPress={onPress}
