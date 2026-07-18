@@ -27,6 +27,13 @@ export const shadows = {
     shadowRadius: 10,
     elevation: 4,
   },
+  switchKnob: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
 } as const;
 
 export type Shadows = typeof shadows;

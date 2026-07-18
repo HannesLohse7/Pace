@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useColorScheme, View } from 'react-native';
 import { vars } from 'nativewind';
 
@@ -6,10 +6,33 @@ import { buildCssVars, colorSchemes, type ColorPalette } from './colors';
 
 const ThemeColorsContext = createContext<ColorPalette | null>(null);
 
+interface ThemeOverrideContextValue {
+  /** True once the user has flipped Profile's Dark Mode switch on. */
+  isDarkOverridden: boolean;
+  setDarkOverride: (forced: boolean) => void;
+}
+
+const ThemeOverrideContext = createContext<ThemeOverrideContextValue | null>(null);
+
 /**
- * Resolves light/dark exclusively from React Native's `useColorScheme()`
- * (OS-level preference) — no manual toggle yet, since that belongs in
- * Profile settings, which doesn't exist until later in Milestone 3.
+ * Resolves light/dark from React Native's `useColorScheme()` (OS-level
+ * preference) by default, with an optional manual override — Profile's
+ * Dark Mode switch (Milestone 3 Checkpoint 1) — that forces dark
+ * regardless of system preference. The override is plain `useState`, not
+ * persisted (no AsyncStorage yet, matching the no-persistence-until-
+ * actually-needed pattern from onboarding): it resets to "follow system"
+ * on every app restart.
+ *
+ * Deliberately a single on/off override, not a 3-way System/Light/Dark
+ * picker: the source's own Profile screen shows one binary switch row for
+ * Dark Mode, and "off" already means "follow system" (there's no separate
+ * "force light" state to lose access to) — flipping the switch back off
+ * always returns to system-following behavior. A 3-way picker would need
+ * a new segmented-control pattern the source doesn't show anywhere, for a
+ * need (forcing light against a dark system preference) nothing here has
+ * asked for. If that need shows up later, this extends cleanly: swap
+ * `isDarkOverridden: boolean` for `override: 'system' | 'light' | 'dark'`
+ * without changing how `resolvedScheme` below is derived.
  *
  * Two things happen here, both driven by the same resolved palette:
  * 1. NativeWind CSS variables (`vars()`) are applied on a root wrapping
@@ -33,22 +56,36 @@ const ThemeColorsContext = createContext<ColorPalette | null>(null);
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const scheme = useColorScheme();
-  const resolvedScheme = scheme === 'dark' ? 'dark' : 'light';
+  const [isDarkOverridden, setDarkOverride] = useState(false);
+  const resolvedScheme = isDarkOverridden || scheme === 'dark' ? 'dark' : 'light';
   const palette = colorSchemes[resolvedScheme];
   const cssVars = useMemo(() => vars(buildCssVars(palette)), [palette]);
 
+  const overrideValue = useMemo(() => ({ isDarkOverridden, setDarkOverride }), [isDarkOverridden]);
+
   return (
-    <ThemeColorsContext.Provider value={palette}>
-      <View style={[{ flex: 1 }, cssVars]}>{children}</View>
-    </ThemeColorsContext.Provider>
+    <ThemeOverrideContext.Provider value={overrideValue}>
+      <ThemeColorsContext.Provider value={palette}>
+        <View style={[{ flex: 1 }, cssVars]}>{children}</View>
+      </ThemeColorsContext.Provider>
+    </ThemeOverrideContext.Provider>
   );
 }
 
-/** The active color scheme's full palette — re-renders whenever OS appearance changes. */
+/** The active color scheme's full palette — re-renders whenever OS appearance or the manual override changes. */
 export function useThemeColors(): ColorPalette {
   const ctx = useContext(ThemeColorsContext);
   if (!ctx) {
     throw new Error('useThemeColors must be used within a ThemeProvider');
+  }
+  return ctx;
+}
+
+/** Reads/sets Profile's Dark Mode override. `isDarkOverridden` is false by default (follow system). */
+export function useThemeOverride(): ThemeOverrideContextValue {
+  const ctx = useContext(ThemeOverrideContext);
+  if (!ctx) {
+    throw new Error('useThemeOverride must be used within a ThemeProvider');
   }
   return ctx;
 }

@@ -1,5 +1,5 @@
-import { ComingSoonPlaceholder } from '@/shared/components';
+import { ProfileScreen } from '@/features/profile/screens/ProfileScreen';
 
 export default function ProfileRoute() {
-  return <ComingSoonPlaceholder label="Profile" />;
+  return <ProfileScreen />;
 }

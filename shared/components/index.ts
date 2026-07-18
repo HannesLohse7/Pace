@@ -12,5 +12,7 @@ export { Screen } from './Screen';
 export type { ScreenProps } from './Screen';
 export { SportDot } from './SportDot';
 export type { SportDotProps } from './SportDot';
+export { Switch } from './Switch';
+export type { SwitchProps } from './Switch';
 export { TabBar } from './TabBar';
 export type { TabBarProps, TabKey } from './TabBar';
