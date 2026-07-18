@@ -10,6 +10,8 @@ export { ProgressRing } from './ProgressRing';
 export type { ProgressRingProps } from './ProgressRing';
 export { Screen } from './Screen';
 export type { ScreenProps } from './Screen';
+export { SettingsRow } from './SettingsRow';
+export type { SettingsRowProps } from './SettingsRow';
 export { SportDot } from './SportDot';
 export type { SportDotProps } from './SportDot';
 export { Switch } from './Switch';

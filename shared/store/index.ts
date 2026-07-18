@@ -9,3 +9,5 @@ export type {
   TrainingDay,
   WearableConnections,
 } from './useOnboardingStore';
+export { useSettingsStore } from './useSettingsStore';
+export type { SettingsActions, SettingsState, SettingsStore, Units } from './useSettingsStore';
