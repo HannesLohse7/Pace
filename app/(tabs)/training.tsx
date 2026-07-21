@@ -1,5 +1,5 @@
-import { ComingSoonPlaceholder } from '@/shared/components';
+import { TrainingScreen } from '@/features/training/screens/TrainingScreen';
 
 export default function TrainingRoute() {
-  return <ComingSoonPlaceholder label="Training" />;
+  return <TrainingScreen />;
 }
