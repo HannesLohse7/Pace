@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
 import { AppText, Screen, SportDot } from '@/shared/components';
 import { CheckIcon } from '@/shared/components/icons';
@@ -27,13 +28,13 @@ import {
  * only visually distinguishes "today" and "rest day" — see
  * mockTrainingData.ts for why a real 3-state status needed inventing).
  *
- * Explicitly not built this checkpoint: tapping a row to open workout
- * detail (Checkpoint 2), drag-reorder (Checkpoint 3 — the source's own
- * six-dot drag handle isn't rendered here either, since there's nothing
- * for it to do yet), and any deeper phase detail beyond naming/dating
- * the current one.
+ * Checkpoint 2 wires each row to the workout-detail modal
+ * (app/workout/[id].tsx). Drag-reorder is still Checkpoint 3 — the
+ * source's own six-dot drag handle isn't rendered here either, since
+ * there's nothing for it to do yet.
  */
 export function TrainingScreen() {
+  const router = useRouter();
   const colors = useThemeColors();
 
   return (
@@ -74,8 +75,9 @@ export function TrainingScreen() {
           const isRest = workout.discipline === 'rest';
 
           return (
-            <View
+            <Pressable
               key={workout.id}
+              onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
               className="flex-row items-center gap-sm border-t border-border px-screen-x py-lg"
               style={{ backgroundColor: isToday ? colors.surface : 'transparent' }}
             >
@@ -113,7 +115,7 @@ export function TrainingScreen() {
               {workout.status === 'missed' && (
                 <AppText className="text-[11px] font-semibold text-danger">Missed</AppText>
               )}
-            </View>
+            </Pressable>
           );
         })}
       </View>

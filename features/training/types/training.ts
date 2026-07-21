@@ -1,7 +1,6 @@
 /**
- * Lean types covering only what the Training week view renders this
- * checkpoint — not the full future workout-detail model (Checkpoint 2)
- * or reorder state (Checkpoint 3).
+ * Lean types covering the Training week view and its workout-detail
+ * overlay (Checkpoint 2) — not reorder state (Checkpoint 3).
  */
 
 export type Discipline = 'swim' | 'bike' | 'run' | 'strength' | 'rest';
@@ -16,6 +15,13 @@ export type Discipline = 'swim' | 'bike' | 'run' | 'strength' | 'rest';
  */
 export type WorkoutStatus = 'completed' | 'upcoming' | 'missed';
 
+/** A single target-zone row, e.g. { zone: 'Z4', name: 'Threshold', range: '260-275W' }. */
+export interface WorkoutZone {
+  zone: string;
+  name: string;
+  range: string;
+}
+
 export interface PlannedWorkout {
   /** Day id, e.g. 'mon' — matches the source's own day-id convention. */
   id: string;
@@ -29,6 +35,21 @@ export interface PlannedWorkout {
   intensity: string;
   tss: number;
   status: WorkoutStatus;
+  /** Estimated calories — matches the source plan's own `calories` field. */
+  calories: number;
+  description: string;
+  equipment: string[];
+  warmup: string;
+  mainset: string;
+  cooldown: string;
+  /** Present only when the workout has a heart-rate target — matches the source's `hasHR`/`hrZones` pairing. */
+  hrZones?: WorkoutZone[];
+  /** Present only when the workout has a power target — matches the source's `hasPower`/`powerZones` pairing. */
+  powerZones?: WorkoutZone[];
+  /** Present only when the workout has a pace target — matches the source's `hasPace`/`paceTarget` pairing. */
+  paceTarget?: string;
+  /** Present only when the workout has a cadence target — matches the source's `hasCadence`/`cadenceTarget` pairing. */
+  cadenceTarget?: string;
 }
 
 export type TrainingPhaseName = 'Base' | 'Build' | 'Peak' | 'Taper';

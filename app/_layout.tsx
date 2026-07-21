@@ -10,7 +10,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <SafeAreaProvider>
         {/*
-          Overlay screens (edit-profile now; workout detail, celebration,
+          Overlay screens (edit-profile, workout detail now; celebration,
           coach review still to come in Milestone 3) are added as sibling
           Stack screens here with presentation: 'modal', so they layer
           above the tab bar instead of requiring another navigation-model
@@ -20,6 +20,7 @@ export default function RootLayout() {
         */}
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="workout/[id]" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </ThemeProvider>
