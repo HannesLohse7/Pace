@@ -1,8 +1,11 @@
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
+import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
 import { AppText, Screen, SportDot } from '@/shared/components';
-import { CheckIcon } from '@/shared/components/icons';
+import { CheckIcon, DragHandleIcon } from '@/shared/components/icons';
+import { useTrainingStore } from '@/shared/store';
+import { spacing } from '@/shared/theme/spacing';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 import {
@@ -12,113 +15,142 @@ import {
   totalHoursLabel,
   totalTssLabel,
   weekDateRangeLabel,
-  weekWorkouts,
 } from '../data/mockTrainingData';
+import type { PlannedWorkout } from '../types/training';
 
 /**
- * Training week view — Milestone 3 Checkpoint 1. The design export has a
- * real Training tab reference (title, a date-range/hours/TSS summary
- * line, and a 7-row day list with drag-to-reorder), ported directly: row
- * spacing, the today-row highlight, and the rest-day-dimmed title all
- * match it exactly. Two things don't exist in the source at all and are
- * extrapolated from Home/Profile's established visual language instead:
- * the phase + race countdown card (styled like Profile's Race Goal card
- * and Home's NextRaceCard, since neither Training-specific precedent
- * exists), and each row's completed/missed status marker (the source
- * only visually distinguishes "today" and "rest day" — see
- * mockTrainingData.ts for why a real 3-state status needed inventing).
+ * Only upcoming, non-rest workouts can be picked up. Completed/missed
+ * workouts already happened (or didn't) — reordering something in the
+ * past isn't a meaningful action — and moving a rest day doesn't mean
+ * anything either (it's not a session with content to relocate). This
+ * only gates what can be *grabbed*: an upcoming workout can still be
+ * dropped before/after a rest or completed row, since locking every
+ * row's *position* against being passed by a drag is a materially
+ * bigger feature (the library has no built-in "protected drop zone"
+ * concept) than what's being asked for here.
+ */
+function isDraggable(workout: PlannedWorkout): boolean {
+  return workout.status === 'upcoming' && workout.discipline !== 'rest';
+}
+
+/**
+ * Training week view — Milestone 3. Checkpoint 1 built the header,
+ * phase/race card, and static day list; Checkpoint 2 wired each row to
+ * the workout-detail modal. This checkpoint adds drag-reorder via
+ * react-native-draggable-flatlist, backed by a new useTrainingStore so
+ * the reordered list actually sticks instead of snapping back.
  *
- * Checkpoint 2 wires each row to the workout-detail modal
- * (app/workout/[id].tsx). Drag-reorder is still Checkpoint 3 — the
- * source's own six-dot drag handle isn't rendered here either, since
- * there's nothing for it to do yet.
+ * The six-dot drag handle is a real source element (the Training row
+ * markup already has it, `opacity:0.35`, unused until now) — ported
+ * directly, not invented. The interaction itself (long-press the handle
+ * to pick up) is this library's standard pattern, not something the
+ * source specifies, since the source is a static mockup with no real
+ * gesture behavior to reference.
  */
 export function TrainingScreen() {
   const router = useRouter();
   const colors = useThemeColors();
+  const weekWorkouts = useTrainingStore((s) => s.weekWorkouts);
+  const reorderWeek = useTrainingStore((s) => s.reorderWeek);
 
-  return (
-    <Screen scroll edges={['top', 'bottom']} className="pb-2xl pt-lg">
-      <View className="px-screen-x">
-        <AppText className="text-[26px] font-bold tracking-[-0.5px] text-color-primary">
-          Training
-        </AppText>
-        <AppText mono className="mt-xs text-[12px] text-color-tertiary">
-          {weekDateRangeLabel} · {totalHoursLabel} · {totalTssLabel}
-        </AppText>
-      </View>
+  const renderItem = ({ item: workout, drag, isActive }: RenderItemParams<PlannedWorkout>) => {
+    const isToday = workout.id === todayId;
+    const isRest = workout.discipline === 'rest';
+    const draggable = isDraggable(workout);
 
-      <View className="mt-lg bg-surface-dark px-screen-x py-xl">
-        <AppText
-          mono
-          className="text-[10px] font-semibold tracking-[1px] text-color-inverse-secondary"
-        >
-          {currentPhase.name.toUpperCase()} PHASE
-        </AppText>
-        <AppText className="mt-[3px] text-[12px] text-color-inverse-secondary">
-          {currentPhase.startDate} – {currentPhase.endDate}
-        </AppText>
-
-        <View className="mt-md border-t border-white/10 pt-md">
-          <AppText className="text-[16px] font-bold text-color-inverse">
-            {raceCountdown.raceName}
+    return (
+      <Pressable
+        onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
+        className="flex-row items-center gap-sm border-t border-border px-screen-x py-lg"
+        style={{
+          backgroundColor: isActive ? colors.tint : isToday ? colors.surface : 'transparent',
+        }}
+      >
+        <View className="w-[38px]">
+          <AppText mono className="text-[10px] font-semibold text-color-tertiary">
+            {workout.short}
           </AppText>
-          <AppText className="mt-[3px] text-[12px] text-color-inverse-secondary">
-            {raceCountdown.raceDate} · {raceCountdown.daysToRace} days
+          <AppText mono className="mt-[2px] text-[13px] font-semibold text-color-primary">
+            {workout.dateNum}
           </AppText>
         </View>
-      </View>
 
-      <View className="mt-sm">
-        {weekWorkouts.map((workout) => {
-          const isToday = workout.id === todayId;
-          const isRest = workout.discipline === 'rest';
+        <SportDot color={colors.sport[workout.discipline]} />
 
-          return (
-            <Pressable
-              key={workout.id}
-              onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
-              className="flex-row items-center gap-sm border-t border-border px-screen-x py-lg"
-              style={{ backgroundColor: isToday ? colors.surface : 'transparent' }}
-            >
-              <View className="w-[38px]">
-                <AppText mono className="text-[10px] font-semibold text-color-tertiary">
-                  {workout.short}
+        <View className="flex-1">
+          <AppText
+            className="text-[15px] font-semibold"
+            style={{ color: isRest ? colors.color.quaternary : colors.color.primary }}
+          >
+            {workout.title}
+          </AppText>
+          <AppText className="mt-[2px] text-[12px] text-color-tertiary">
+            {workout.duration} · {workout.intensity}
+          </AppText>
+        </View>
+
+        {workout.status === 'completed' && (
+          <View
+            className="h-5 w-5 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors['success-bg'] }}
+          >
+            <CheckIcon size={10} color={colors.success} strokeWidth={2.6} />
+          </View>
+        )}
+        {workout.status === 'missed' && (
+          <AppText className="text-[11px] font-semibold text-danger">Missed</AppText>
+        )}
+        {draggable && (
+          <Pressable onLongPress={drag} hitSlop={12} className="pl-1">
+            <DragHandleIcon />
+          </Pressable>
+        )}
+      </Pressable>
+    );
+  };
+
+  return (
+    <Screen edges={['top', 'bottom']} className="pt-lg">
+      <DraggableFlatList
+        data={weekWorkouts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        onDragEnd={({ data }) => reorderWeek(data)}
+        contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
+        ListHeaderComponent={
+          <View className="mb-sm">
+            <View className="px-screen-x">
+              <AppText className="text-[26px] font-bold tracking-[-0.5px] text-color-primary">
+                Training
+              </AppText>
+              <AppText mono className="mt-xs text-[12px] text-color-tertiary">
+                {weekDateRangeLabel} · {totalHoursLabel} · {totalTssLabel}
+              </AppText>
+            </View>
+
+            <View className="mt-lg bg-surface-dark px-screen-x py-xl">
+              <AppText
+                mono
+                className="text-[10px] font-semibold tracking-[1px] text-color-inverse-secondary"
+              >
+                {currentPhase.name.toUpperCase()} PHASE
+              </AppText>
+              <AppText className="mt-[3px] text-[12px] text-color-inverse-secondary">
+                {currentPhase.startDate} – {currentPhase.endDate}
+              </AppText>
+
+              <View className="mt-md border-t border-white/10 pt-md">
+                <AppText className="text-[16px] font-bold text-color-inverse">
+                  {raceCountdown.raceName}
                 </AppText>
-                <AppText mono className="mt-[2px] text-[13px] font-semibold text-color-primary">
-                  {workout.dateNum}
+                <AppText className="mt-[3px] text-[12px] text-color-inverse-secondary">
+                  {raceCountdown.raceDate} · {raceCountdown.daysToRace} days
                 </AppText>
               </View>
-
-              <SportDot color={colors.sport[workout.discipline]} />
-
-              <View className="flex-1">
-                <AppText
-                  className="text-[15px] font-semibold"
-                  style={{ color: isRest ? colors.color.quaternary : colors.color.primary }}
-                >
-                  {workout.title}
-                </AppText>
-                <AppText className="mt-[2px] text-[12px] text-color-tertiary">
-                  {workout.duration} · {workout.intensity}
-                </AppText>
-              </View>
-
-              {workout.status === 'completed' && (
-                <View
-                  className="h-5 w-5 items-center justify-center rounded-full"
-                  style={{ backgroundColor: colors['success-bg'] }}
-                >
-                  <CheckIcon size={10} color={colors.success} strokeWidth={2.6} />
-                </View>
-              )}
-              {workout.status === 'missed' && (
-                <AppText className="text-[11px] font-semibold text-danger">Missed</AppText>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
+            </View>
+          </View>
+        }
+      />
     </Screen>
   );
 }

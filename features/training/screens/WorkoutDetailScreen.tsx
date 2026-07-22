@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Screen } from '@/shared/components';
 import { ChevronLeftIcon } from '@/shared/components/icons';
+import { useTrainingStore } from '@/shared/store';
 import { lightColors } from '@/shared/theme/colors';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
-import { weekWorkouts } from '../data/mockTrainingData';
 import type { WorkoutZone } from '../types/training';
 
 function ZoneRow({ label, value }: { label: string; value: string }) {
@@ -104,6 +104,7 @@ export function WorkoutDetailScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
+  const weekWorkouts = useTrainingStore((s) => s.weekWorkouts);
 
   const workout = weekWorkouts.find((w) => w.id === id);
 

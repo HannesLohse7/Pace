@@ -13,3 +13,9 @@ export { useProfileStore } from './useProfileStore';
 export type { ProfileActions, ProfileState, ProfileStore } from './useProfileStore';
 export { useSettingsStore } from './useSettingsStore';
 export type { SettingsActions, SettingsState, SettingsStore, Units } from './useSettingsStore';
+export { useTrainingStore } from './useTrainingStore';
+export type {
+  TrainingActions as TrainingStoreActions,
+  TrainingState as TrainingStoreState,
+  TrainingStore,
+} from './useTrainingStore';

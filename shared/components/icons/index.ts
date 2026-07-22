@@ -2,6 +2,7 @@ export { ArrowRightIcon } from './ArrowRightIcon';
 export { CheckIcon } from './CheckIcon';
 export { ChevronLeftIcon } from './ChevronLeftIcon';
 export { CoachIcon } from './CoachIcon';
+export { DragHandleIcon } from './DragHandleIcon';
 export { HomeIcon } from './HomeIcon';
 export { ProfileIcon } from './ProfileIcon';
 export { ProgressIcon } from './ProgressIcon';
