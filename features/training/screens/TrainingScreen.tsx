@@ -4,7 +4,7 @@ import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable
 
 import { AppText, Screen, SportDot } from '@/shared/components';
 import { CheckIcon, DragHandleIcon } from '@/shared/components/icons';
-import { useTrainingStore } from '@/shared/store';
+import { isSwappable, useTrainingStore } from '@/shared/store';
 import { spacing } from '@/shared/theme/spacing';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
@@ -19,31 +19,24 @@ import {
 import type { PlannedWorkout } from '../types/training';
 
 /**
- * Only upcoming, non-rest workouts can be picked up. Completed/missed
- * workouts already happened (or didn't) — reordering something in the
- * past isn't a meaningful action — and moving a rest day doesn't mean
- * anything either (it's not a session with content to relocate). This
- * only gates what can be *grabbed*: an upcoming workout can still be
- * dropped before/after a rest or completed row, since locking every
- * row's *position* against being passed by a drag is a materially
- * bigger feature (the library has no built-in "protected drop zone"
- * concept) than what's being asked for here.
- */
-function isDraggable(workout: PlannedWorkout): boolean {
-  return workout.status === 'upcoming' && workout.discipline !== 'rest';
-}
-
-/**
  * Training week view — Milestone 3. Checkpoint 1 built the header,
  * phase/race card, and static day list; Checkpoint 2 wired each row to
- * the workout-detail modal. This checkpoint adds drag-reorder via
- * react-native-draggable-flatlist, backed by a new useTrainingStore so
- * the reordered list actually sticks instead of snapping back.
+ * the workout-detail modal; Checkpoint 3 added drag-reorder.
+ *
+ * Dragging is a reschedule (swap dates with the drop target), not a
+ * reorder — see useTrainingStore's `swapWorkouts` for the actual swap
+ * and drop-target validation logic, kept out of this component per the
+ * project's UI/business-logic separation. Only upcoming, non-rest
+ * workouts render a drag handle (same `isSwappable` rule the store uses
+ * to validate drop targets, imported from the same place so the two
+ * can't drift apart) — completed/missed workouts already happened or
+ * didn't, and a rest day isn't a session with a date worth taking over.
  *
  * The six-dot drag handle is a real source element (the Training row
- * markup already has it, `opacity:0.35`, unused until now) — ported
- * directly, not invented. The interaction itself (long-press the handle
- * to pick up) is this library's standard pattern, not something the
+ * markup already has it, `opacity:0.35`, unused until Checkpoint 3 gave
+ * it something to do) — ported directly, not invented. The interaction
+ * itself (long-press the handle to pick up) is
+ * react-native-draggable-flatlist's standard pattern, not something the
  * source specifies, since the source is a static mockup with no real
  * gesture behavior to reference.
  */
@@ -51,12 +44,12 @@ export function TrainingScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const weekWorkouts = useTrainingStore((s) => s.weekWorkouts);
-  const reorderWeek = useTrainingStore((s) => s.reorderWeek);
+  const swapWorkouts = useTrainingStore((s) => s.swapWorkouts);
 
   const renderItem = ({ item: workout, drag, isActive }: RenderItemParams<PlannedWorkout>) => {
     const isToday = workout.id === todayId;
     const isRest = workout.discipline === 'rest';
-    const draggable = isDraggable(workout);
+    const draggable = isSwappable(workout);
 
     return (
       <Pressable
@@ -115,7 +108,7 @@ export function TrainingScreen() {
         data={weekWorkouts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        onDragEnd={({ data }) => reorderWeek(data)}
+        onDragEnd={({ from, to }) => swapWorkouts(from, to)}
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
         ListHeaderComponent={
           <View className="mb-sm">
