@@ -5,26 +5,34 @@ import { useOnboardingStore } from '@/shared/store';
 
 import { ConnectToggleBadge } from '../components/ConnectToggleBadge';
 import { OnboardingStepShell } from '../components/OnboardingStepShell';
+import { useOnboardingNavigation } from '../hooks/useOnboardingNavigation';
 
 /**
  * No gating: calendar connection is explicitly skippable in the source
- * (the inert "Skip for now" line below the button) and isn't required to
+ * (the "Skip for now" line below the button) and isn't required to
  * generate a first plan — matching docs/PROJECT_RULES.md's "avoid
  * unnecessary questions" UX rule. canContinue is left at its default
  * (always true).
+ *
+ * "Skip for now" calls the same goNext() as Continue — this screen was
+ * never gated, so skipping and continuing are behaviorally identical;
+ * "Skip" is just the honest label for tapping through without connecting
+ * anything. (Previously this text had no onPress at all — inert, not
+ * skippable despite the label. Fixed here.)
  */
 export function CalendarScreen() {
   const googleCalendarConnected = useOnboardingStore((s) => s.googleCalendarConnected);
   const appleCalendarConnected = useOnboardingStore((s) => s.appleCalendarConnected);
   const toggleGoogleCalendar = useOnboardingStore((s) => s.toggleGoogleCalendar);
   const toggleAppleCalendar = useOnboardingStore((s) => s.toggleAppleCalendar);
+  const { goNext } = useOnboardingNavigation('calendar');
 
   return (
     <OnboardingStepShell
       step="calendar"
       title="Connect your calendar"
       footerExtra={
-        <AppText className="mt-md text-center text-[13px] text-color-tertiary">
+        <AppText onPress={goNext} className="mt-md text-center text-[13px] text-color-tertiary">
           Skip for now
         </AppText>
       }
