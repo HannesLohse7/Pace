@@ -19,6 +19,21 @@ import {
 import type { PlannedWorkout } from '../types/training';
 
 /**
+ * Fixed row height (measured from the current 2-line row content at
+ * 79px, rounded to the 4px spacing grid) — paired with `numberOfLines`
+ * caps on both text lines below so no row can ever grow or shrink with
+ * its content. Needed because react-native-draggable-flatlist caches
+ * each row's measured layout (offset/size) for its drag animation;
+ * letting a row's height vary by content (e.g. Rest Day's shorter
+ * fields vs. a long workout title) risks a stale cached measurement
+ * being applied to the wrong row after a reschedule swaps in different
+ * content under the same stable position — same failure class as the
+ * id-stability bug fixed in useTrainingStore, just via height instead
+ * of key.
+ */
+const ROW_HEIGHT = 80;
+
+/**
  * Training week view — Milestone 3. Checkpoint 1 built the header,
  * phase/race card, and static day list; Checkpoint 2 wired each row to
  * the workout-detail modal; Checkpoint 3 added drag-reorder.
@@ -56,6 +71,7 @@ export function TrainingScreen() {
         onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
         className="flex-row items-center gap-sm border-t border-border px-screen-x py-lg"
         style={{
+          minHeight: ROW_HEIGHT,
           backgroundColor: isActive ? colors.tint : isToday ? colors.surface : 'transparent',
         }}
       >
@@ -72,12 +88,13 @@ export function TrainingScreen() {
 
         <View className="flex-1">
           <AppText
+            numberOfLines={1}
             className="text-[15px] font-semibold"
             style={{ color: isRest ? colors.color.quaternary : colors.color.primary }}
           >
             {workout.title}
           </AppText>
-          <AppText className="mt-[2px] text-[12px] text-color-tertiary">
+          <AppText numberOfLines={1} className="mt-[2px] text-[12px] text-color-tertiary">
             {workout.duration} · {workout.intensity}
           </AppText>
         </View>
