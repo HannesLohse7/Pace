@@ -1,12 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  runOnJS,
-  type SharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { runOnJS, type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
 import { AppText, SportDot } from '@/shared/components';
 import { CheckIcon, DragHandleIcon } from '@/shared/components/icons';
@@ -32,8 +27,6 @@ export const ROW_HEIGHT = 80;
 
 /** How long a press must hold on the drag handle before a drag activates — matches the pre-existing long-press-to-pick-up interaction. */
 const DRAG_ACTIVATION_MS = 250;
-/** Duration of the ease back to the row's own position when a drag ends, committed or rejected. */
-const SNAP_BACK_MS = 150;
 
 export interface TrainingWorkoutRowProps {
   workout: PlannedWorkout;
@@ -94,14 +87,27 @@ export function TrainingWorkoutRow({
   const isRest = workout.discipline === 'rest';
   const draggable = isSwappable(workout);
 
+  // Always returns every key it ever sets (transform/zIndex/shadow*),
+  // with explicit "off" values when inactive — never an empty `{}`.
+  // useAnimatedStyle omitting a key between evaluations is a known
+  // native-only footgun: RN's style diffing only patches keys that are
+  // actually present in the new style object, so a key that's simply
+  // *absent* (rather than explicitly reset) can leave the view's
+  // previous native transform/elevation/shadow in place indefinitely —
+  // invisible on web (where an absent inline-style key does reset,
+  // which is exactly why this wasn't caught here), but on a real device
+  // this is a plausible, well-documented explanation for a dragged tile
+  // staying visually "stuck" mid-air after release.
   const dragOverlayStyle = useAnimatedStyle(() => {
-    if (activeIndex.value !== index) {
-      return {};
-    }
+    const isActive = activeIndex.value === index;
     return {
-      transform: [{ translateY: dragTranslationY.value }],
-      zIndex: 10,
-      ...shadows.dragged,
+      transform: [{ translateY: isActive ? dragTranslationY.value : 0 }],
+      zIndex: isActive ? 10 : 0,
+      elevation: isActive ? shadows.dragged.elevation : 0,
+      shadowColor: shadows.dragged.shadowColor,
+      shadowOffset: isActive ? shadows.dragged.shadowOffset : { width: 0, height: 0 },
+      shadowOpacity: isActive ? shadows.dragged.shadowOpacity : 0,
+      shadowRadius: isActive ? shadows.dragged.shadowRadius : 0,
     };
   });
 
@@ -120,11 +126,19 @@ export function TrainingWorkoutRow({
       runOnJS(onDragEnd)(index, targetIndex);
     })
     .onFinalize(() => {
-      dragTranslationY.value = withTiming(0, { duration: SNAP_BACK_MS }, (finished) => {
-        if (finished) {
-          activeIndex.value = -1;
-        }
-      });
+      // Synchronous, unconditional resets — deliberately not animated.
+      // The previous version eased dragTranslationY back to 0 via
+      // withTiming and only cleared activeIndex inside that animation's
+      // completion callback once it reported `finished`. That's an
+      // avoidable async dependency for state whose entire job is
+      // guaranteeing cleanup: if that callback is ever skipped or
+      // interrupted (a second drag starting before the first's ease-out
+      // finishes, a dropped frame, anything) on a real device, the row
+      // never got un-marked as active — plausible root cause for the
+      // reported "stuck" symptom. Resetting both values directly here
+      // means cleanup can never depend on an animation callback firing.
+      activeIndex.value = -1;
+      dragTranslationY.value = 0;
     });
 
   return (
