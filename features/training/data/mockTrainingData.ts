@@ -199,3 +199,12 @@ export const weekWorkouts: PlannedWorkout[] = [
     cadenceTarget: '172-176 spm',
   },
 ];
+
+/**
+ * Derived from `todayId` against the original mock order, not
+ * hardcoded — `dateNum` (not `id`) is what identifies "today" once
+ * drag-reorder is in play, since a reorder moves `id` with the dragged
+ * workout but `dateNum` stays anchored to calendar position (see
+ * useTrainingStore's `reorderWeek`).
+ */
+export const todayDateNum = weekWorkouts.find((w) => w.id === todayId)!.dateNum;

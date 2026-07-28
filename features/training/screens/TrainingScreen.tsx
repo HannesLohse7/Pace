@@ -11,7 +11,7 @@ import { useThemeColors } from '@/shared/theme/ThemeProvider';
 import {
   currentPhase,
   raceCountdown,
-  todayId,
+  todayDateNum,
   totalHoursLabel,
   totalTssLabel,
   weekDateRangeLabel,
@@ -26,10 +26,9 @@ import type { PlannedWorkout } from '../types/training';
  * each row's measured layout (offset/size) for its drag animation;
  * letting a row's height vary by content (e.g. Rest Day's shorter
  * fields vs. a long workout title) risks a stale cached measurement
- * being applied to the wrong row after a reschedule swaps in different
- * content under the same stable position — same failure class as the
- * id-stability bug fixed in useTrainingStore, just via height instead
- * of key.
+ * being applied to the wrong row once that row's content changes (via
+ * a reorder moving a different workout into it) but its cached size
+ * hasn't caught up yet.
  */
 const ROW_HEIGHT = 80;
 
@@ -38,14 +37,14 @@ const ROW_HEIGHT = 80;
  * phase/race card, and static day list; Checkpoint 2 wired each row to
  * the workout-detail modal; Checkpoint 3 added drag-reorder.
  *
- * Dragging is a reschedule (swap dates with the drop target), not a
- * reorder — see useTrainingStore's `swapWorkouts` for the actual swap
- * and drop-target validation logic, kept out of this component per the
- * project's UI/business-logic separation. Only upcoming, non-rest
- * workouts render a drag handle (same `isSwappable` rule the store uses
- * to validate drop targets, imported from the same place so the two
- * can't drift apart) — completed/missed workouts already happened or
- * didn't, and a rest day isn't a session with a date worth taking over.
+ * Dragging is a genuine reorder — see useTrainingStore's `reorderWeek`
+ * for the actual reorder and drop-target validation logic, kept out of
+ * this component per the project's UI/business-logic separation. Only
+ * upcoming, non-rest workouts render a drag handle (same `isSwappable`
+ * rule the store uses to validate drop targets, imported from the same
+ * place so the two can't drift apart) — completed/missed workouts
+ * already happened or didn't, and a rest day isn't a session with a
+ * date worth taking over.
  *
  * The six-dot drag handle is a real source element (the Training row
  * markup already has it, `opacity:0.35`, unused until Checkpoint 3 gave
@@ -59,10 +58,10 @@ export function TrainingScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const weekWorkouts = useTrainingStore((s) => s.weekWorkouts);
-  const swapWorkouts = useTrainingStore((s) => s.swapWorkouts);
+  const reorderWeek = useTrainingStore((s) => s.reorderWeek);
 
   const renderItem = ({ item: workout, drag, isActive }: RenderItemParams<PlannedWorkout>) => {
-    const isToday = workout.id === todayId;
+    const isToday = workout.dateNum === todayDateNum;
     const isRest = workout.discipline === 'rest';
     const draggable = isSwappable(workout);
 
@@ -125,7 +124,7 @@ export function TrainingScreen() {
         data={weekWorkouts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        onDragEnd={({ from, to }) => swapWorkouts(from, to)}
+        onDragEnd={({ data, from, to }) => reorderWeek(data, from, to)}
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
         ListHeaderComponent={
           <View className="mb-sm">
