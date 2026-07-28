@@ -35,29 +35,25 @@ const DAY_SLOTS = weekWorkouts.map((workout) => ({
  * every other store here — resets to the mock default on restart.
  *
  * `reorderWeek` is a genuine array reorder — `id` travels with the
- * dragged workout, matching react-native-draggable-flatlist's own
- * contract (its internal drag-gesture position tracking, keyed by
- * `id` via `keyExtractor`, expects the array itself to reorder and the
- * key to move with the item it animated). This was NOT the first
- * implementation: an earlier version pinned `id`/`short`/`dateNum` to
- * the array *position* and swapped only content, so the array order
- * never actually changed on a drop — that directly contradicted what
- * the library had just animated, and produced exactly the on-device
- * symptom reported: workouts snapping to the wrong position on drop and
- * jumping to a different spot when starting a new drag.
+ * dragged workout. This store no longer depends on any drag-gesture
+ * library at all: Training's row list (see `TrainingScreen.tsx` /
+ * `TrainingWorkoutRow.tsx`) is a hand-built absolute-positioned list on
+ * react-native-gesture-handler + react-native-reanimated directly, not
+ * react-native-draggable-flatlist. Three straight rounds of on-device
+ * bugs (stale layout-cache overlap, then a position-pinned swap that
+ * contradicted the library's own reorder contract, then snapping/
+ * jumping) all traced back to that library's internal position-
+ * tracking cache going stale relative to reality. The replacement
+ * model has no such cache: every row's position is `index * ROW_HEIGHT`,
+ * computed fresh from the current array on every render, never stored
+ * or inferred separately from it — this store is the only source of
+ * truth for order, and there's nothing else to fall out of sync with it.
  *
- * Reverting to true reordering brings back the *original* problem this
- * feature started with, though: if `short`/`dateNum` simply travel with
- * the dragged object like `id` does, the visible date label stops
- * matching the row's real calendar day (a workout dragged from
- * Wednesday to Saturday's position would still say "WED" while sitting
- * in Saturday's slot). Since this list is always exactly the current
- * week's 7 fixed days in order, `short`/`dateNum` aren't part of what
- * "belongs" to a dragged workout the way `id`/title/discipline/etc. are
- * — they're recomputed from `DAY_SLOTS` after every reorder, keyed
- * purely by final array position. `id` is the only field that travels;
- * everything else either travels with it (real workout content) or is
- * reassigned from position (the calendar-day labels).
+ * `short`/`dateNum` still don't travel with `id`, for the same reason
+ * as before: this list is always exactly "this week, Mon through Sun,
+ * top to bottom," so the calendar-day label belongs to the *position*,
+ * not the dragged workout — recomputed from `DAY_SLOTS` after every
+ * reorder, keyed purely by final array position.
  */
 export interface TrainingState {
   weekWorkouts: PlannedWorkout[];
@@ -65,30 +61,29 @@ export interface TrainingState {
 
 export interface TrainingActions {
   /**
-   * Commits a drag-reorder. `data` is react-native-draggable-flatlist's
-   * own already-reordered array from `onDragEnd` (real moved positions,
-   * `id` traveling with each item) — `from`/`to` are the same callback's
-   * pre-drag indices, used only for validation against the *previous*
-   * `weekWorkouts` state.
+   * Commits a drag-reorder as a genuine splice/move: the workout at
+   * `from` is removed and reinserted at `to`, shifting everything
+   * strictly between them by one slot — real list-reorder semantics,
+   * not a two-position swap.
    *
-   * Rejected (silently, no state change) when: the dragged workout
-   * (`from` in the previous state) isn't swappable, or committing this
-   * move would change the position of any non-swappable workout — every
-   * index strictly between `from` and `to` shifts by one slot as part
-   * of a real reorder, and completed/missed/rest days must never move,
-   * not just never be the exact drop target. Since `weekWorkouts`
-   * doesn't change in the rejected case, DraggableFlatList's own
-   * optimistic drag animation reconciles back to the last real state on
-   * the next render — a visual snap-back, not a broken/stuck list.
+   * Rejected (silently, no state change) when: `from === to`, the
+   * dragged workout isn't swappable, or committing this move would
+   * change the position of any non-swappable workout — every index
+   * strictly between `from` and `to` shifts by one slot as part of a
+   * real reorder, and completed/missed/rest days must never move, not
+   * just never be the exact drop target. Since `weekWorkouts` doesn't
+   * change in the rejected case, the dragged row's own gesture-driven
+   * offset resets to 0 and it visually settles back at its unchanged
+   * position — a snap-back, not a broken/stuck row.
    */
-  reorderWeek: (data: PlannedWorkout[], from: number, to: number) => void;
+  reorderWeek: (from: number, to: number) => void;
 }
 
 export type TrainingStore = TrainingState & TrainingActions;
 
 export const useTrainingStore = create<TrainingStore>((set, get) => ({
   weekWorkouts,
-  reorderWeek: (data, from, to) => {
+  reorderWeek: (from, to) => {
     if (from === to) return;
 
     const current = get().weekWorkouts;
@@ -103,7 +98,11 @@ export const useTrainingStore = create<TrainingStore>((set, get) => ({
       if (!displaced || !isSwappable(displaced)) return;
     }
 
-    const relabeled = data.map((workout, index) => ({
+    const moved = current.slice();
+    const [item] = moved.splice(from, 1);
+    moved.splice(to, 0, item!);
+
+    const relabeled = moved.map((workout, index) => ({
       ...workout,
       short: DAY_SLOTS[index]!.short,
       dateNum: DAY_SLOTS[index]!.dateNum,

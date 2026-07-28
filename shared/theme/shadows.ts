@@ -34,6 +34,14 @@ export const shadows = {
     shadowRadius: 3,
     elevation: 2,
   },
+  /** No source equivalent — Training's custom drag-reorder lifts the actively-dragged row above the rest of the list. */
+  dragged: {
+    shadowColor: '#111318',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
+  },
 } as const;
 
 export type Shadows = typeof shadows;
