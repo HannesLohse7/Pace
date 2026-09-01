@@ -6,6 +6,7 @@ import DateTimePicker, {
 
 import { AppText } from '@/shared/components';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
+import { toIsoDate } from '@/shared/utils/date';
 
 export interface OnboardingDateFieldProps {
   label: string;
@@ -13,13 +14,6 @@ export interface OnboardingDateFieldProps {
   value: string;
   onChange: (isoDate: string) => void;
   placeholder?: string;
-}
-
-function toIsoDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function fromIsoDate(value: string): Date {
