@@ -9,7 +9,6 @@ import { isSwappable } from '@/shared/store';
 import { shadows } from '@/shared/theme/shadows';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
-import { todayDateNum } from '../data/mockTrainingData';
 import type { PlannedWorkout } from '../types/training';
 
 /**
@@ -31,6 +30,8 @@ const DRAG_ACTIVATION_MS = 250;
 export interface TrainingWorkoutRowProps {
   workout: PlannedWorkout;
   index: number;
+  /** Whether this row's calendar day is today -- computed by the parent from the real current date, not a mock-data constant. */
+  isToday: boolean;
   /** Total row count, used to clamp the computed target index in range. */
   rowCount: number;
   /** Index of the row currently being dragged, or -1 when none is. Shared across all rows so only one can ever render elevated. */
@@ -75,6 +76,7 @@ export interface TrainingWorkoutRowProps {
 export function TrainingWorkoutRow({
   workout,
   index,
+  isToday,
   rowCount,
   activeIndex,
   dragTranslationY,
@@ -83,7 +85,6 @@ export function TrainingWorkoutRow({
   const router = useRouter();
   const colors = useThemeColors();
 
-  const isToday = workout.dateNum === todayDateNum;
   const isRest = workout.discipline === 'rest';
   const draggable = isSwappable(workout);
 
@@ -149,7 +150,15 @@ export function TrainingWorkoutRow({
       ]}
     >
       <Pressable
-        onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
+        // Synthesized "Rest Day" placeholders (`isReal: false`) have no
+        // backing `workout` row for the detail screen to look up --
+        // guard navigation rather than pushing a route that will only
+        // ever show "Workout not found."
+        onPress={
+          workout.isReal
+            ? () => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
+            : undefined
+        }
         className="h-full flex-row items-center gap-sm border-t border-border px-screen-x"
         // Opaque (colors.background), not 'transparent' — rows can now
         // visually pass over one another while a drag is in progress
