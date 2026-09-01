@@ -5,7 +5,15 @@ import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface OnboardingTextFieldProps extends Pick<
   TextInputProps,
-  'value' | 'onChangeText' | 'placeholder' | 'keyboardType' | 'autoCapitalize' | 'onBlur'
+  | 'value'
+  | 'onChangeText'
+  | 'placeholder'
+  | 'keyboardType'
+  | 'autoCapitalize'
+  | 'onBlur'
+  | 'secureTextEntry'
+  | 'textContentType'
+  | 'autoComplete'
 > {
   label: string;
   /** When set, shows this message below the input and switches the underline to the danger color. */

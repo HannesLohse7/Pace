@@ -10,3 +10,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function isValidEmail(value: string): boolean {
   return EMAIL_PATTERN.test(value.trim());
 }
+
+/** Matches Supabase Auth's own minimum — an 8-character floor, not a full strength check. */
+const MIN_PASSWORD_LENGTH = 8;
+
+export function isValidPassword(value: string): boolean {
+  return value.length >= MIN_PASSWORD_LENGTH;
+}

@@ -50,6 +50,14 @@ export interface OnboardingState {
   // account
   accountName: string;
   accountEmail: string;
+  accountPassword: string;
+  /**
+   * Set by the Generating screen when Supabase Auth rejects the signup
+   * (e.g. "email already registered") — read by the Account screen so
+   * the athlete sees why they were sent back, instead of the flow
+   * silently resetting to step one.
+   */
+  authError: string | null;
 
   // goal + race
   goal: OnboardingGoal | null;
@@ -75,6 +83,8 @@ export interface OnboardingActions {
 
   setAccountName: (name: string) => void;
   setAccountEmail: (email: string) => void;
+  setAccountPassword: (password: string) => void;
+  setAuthError: (message: string | null) => void;
 
   selectGoal: (goal: OnboardingGoal) => void;
   setRaceName: (name: string) => void;
@@ -105,6 +115,8 @@ const initialState: OnboardingState = {
   step: 'splash',
   accountName: '',
   accountEmail: '',
+  accountPassword: '',
+  authError: null,
   goal: null,
   raceName: '',
   raceDate: '',
@@ -140,6 +152,8 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
 
   setAccountName: (accountName) => set({ accountName }),
   setAccountEmail: (accountEmail) => set({ accountEmail }),
+  setAccountPassword: (accountPassword) => set({ accountPassword }),
+  setAuthError: (authError) => set({ authError }),
 
   selectGoal: (goal) => set({ goal }),
   setRaceName: (raceName) => set({ raceName }),
