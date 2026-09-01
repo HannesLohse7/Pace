@@ -10,6 +10,9 @@ module.exports = defineConfig([
     // design/ is a vendored copy of the Claude Design export's own preview
     // harness (image-slot.js, ios-frame.jsx, support.js) — third-party
     // reference tooling, not application source, so it's not linted here.
-    ignores: ['dist/*', 'design/*'],
+    // supabase/functions/ runs on Deno, not React Native/Node — its own
+    // globals (Deno.*) and its own import scheme (jsr:) aren't meaningful
+    // to this project's ESLint/TS setup, which targets the Expo app.
+    ignores: ['dist/*', 'design/*', 'supabase/functions/*'],
   },
 ]);

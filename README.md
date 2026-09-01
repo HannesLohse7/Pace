@@ -42,12 +42,18 @@ This starts the Expo dev server. Scan the printed QR code with [Expo Go](https:/
 
 ```
 app/                 # Expo Router routes (thin — delegate to feature screens)
-features/            # Feature-first app code (e.g. features/home/)
-  home/
-    components/       # Feature-specific composite components
-    data/              # Mock data
-    screens/           # Top-level screen components
-    types/             # Feature-specific types
+features/            # Feature-first app code — each feature has its own
+                      # components/, data/, screens/, types/ (shape shown under home/ below)
+  home/                # Home Dashboard
+    components/          # Feature-specific composite components
+    data/                 # Mock data
+    screens/              # Top-level screen components
+    types/                # Feature-specific types
+  training/            # Training Calendar + Workout Detail (same shape as home/)
+  coach/               # AI Coach — chat UI, scripted replies (no real LLM yet)
+  progress/            # Progress screen
+  onboarding/          # 9-step onboarding flow
+  profile/             # Profile + Edit Profile
 shared/              # Cross-feature primitives
   components/          # Reusable UI (Screen, AppText, PrimaryButton, TabBar, ...)
   theme/               # Design tokens (colors, spacing, typography, shadows)
