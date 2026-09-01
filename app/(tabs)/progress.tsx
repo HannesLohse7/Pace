@@ -1,5 +1,5 @@
-import { ComingSoonPlaceholder } from '@/shared/components';
+import { ProgressScreen } from '@/features/progress/screens/ProgressScreen';
 
 export default function ProgressRoute() {
-  return <ComingSoonPlaceholder label="Progress" />;
+  return <ProgressScreen />;
 }
