@@ -42,16 +42,20 @@ export function TodayCard({ workout, onPress, onStartWorkout }: TodayCardProps) 
         <AppText mono className="text-value text-color-secondary">
           {workout.duration}
         </AppText>
-        <View className="h-[3px] w-[3px] rounded-full bg-neutral-200" />
-        <View className="flex-row items-baseline">
-          <AppText mono className="text-stat-sm text-color-primary">
-            {workout.tss}
-          </AppText>
-          <AppText mono className="text-[11px] text-color-tertiary">
-            {' '}
-            TSS
-          </AppText>
-        </View>
+        {workout.tss !== undefined && (
+          <>
+            <View className="h-[3px] w-[3px] rounded-full bg-neutral-200" />
+            <View className="flex-row items-baseline">
+              <AppText mono className="text-stat-sm text-color-primary">
+                {workout.tss}
+              </AppText>
+              <AppText mono className="text-[11px] text-color-tertiary">
+                {' '}
+                TSS
+              </AppText>
+            </View>
+          </>
+        )}
       </View>
 
       <AppText className="mt-md max-w-[290px] text-body text-color-secondary">
