@@ -261,11 +261,12 @@
     </div>
 
     <script>
-      // Same-origin JSON API — this page is a static Supabase Storage asset,
-      // not a Claude artifact, so it isn't subject to the artifact CDN/fetch
-      // allowlist; a plain fetch() to the project's own Edge Function works
-      // like it would on any ordinary website.
-      var API_URL = '/functions/v1/waitlist';
+      // Absolute URL — this page is hosted on GitHub Pages, a different
+      // origin than the Supabase project, so this is a real cross-origin
+      // fetch (the Edge Function sends CORS headers to allow it). Not a
+      // Claude artifact either way, so it isn't subject to the artifact
+      // CDN/fetch allowlist.
+      var API_URL = 'https://nttuahswduqupiykguhk.supabase.co/functions/v1/waitlist';
 
       var formView = document.getElementById('form-view');
       var successView = document.getElementById('success-view');
