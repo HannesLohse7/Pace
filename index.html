@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pace — join the waitlist</title>
+    <meta
+      name="description"
+      content="Pace is an AI endurance coach for working adults training for triathlon. Join the waitlist for early access."
+    />
+    <style>
+      :root {
+        --background: #0b0c0f;
+        --surface: #15171c;
+        --accent: #4338ca;
+        --accent-light: #6d63e0;
+        --border: #2a2d33;
+        --text-primary: #f2f3f5;
+        --text-secondary: #a6acb8;
+        --text-tertiary: #7c8493;
+        --success: #10b981;
+        --danger: #dc2626;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text-primary);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 20px 64px;
+      }
+      .card {
+        width: 100%;
+        max-width: 440px;
+      }
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 40px;
+      }
+      .wordmark .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent-light);
+      }
+      .wordmark span {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: var(--text-primary);
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.15;
+        letter-spacing: -0.7px;
+        font-weight: 700;
+        margin: 0 0 14px;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--accent-light);
+      }
+      p.lede {
+        font-size: 15.5px;
+        line-height: 1.55;
+        color: var(--text-secondary);
+        margin: 0 0 28px;
+      }
+      .perk {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 28px;
+      }
+      .perk .icon {
+        color: var(--accent-light);
+        font-size: 15px;
+        line-height: 1.4;
+      }
+      .perk .copy {
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+      }
+      .perk .copy strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin-bottom: 6px;
+      }
+      input[type='email'],
+      select {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 13px 14px;
+        font-size: 15px;
+        color: var(--text-primary);
+        outline: none;
+        appearance: none;
+      }
+      input[type='email']:focus,
+      select:focus {
+        border-color: var(--accent-light);
+      }
+      select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237C8493' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+      }
+      button {
+        margin-top: 4px;
+        width: 100%;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 15px 16px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--accent-light);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .error {
+        font-size: 13px;
+        color: var(--danger);
+        margin: -6px 0 0;
+      }
+      .fineprint {
+        margin-top: 18px;
+        font-size: 12px;
+        color: var(--text-tertiary);
+        line-height: 1.5;
+      }
+      .count {
+        margin-top: 32px;
+        font-size: 12.5px;
+        color: var(--text-tertiary);
+        text-align: center;
+      }
+      .count strong {
+        color: var(--text-secondary);
+      }
+      .success-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid var(--success);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 22px;
+        font-size: 20px;
+        color: var(--success);
+      }
+      .position {
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        margin: 0 0 28px;
+      }
+      .position strong {
+        color: var(--text-primary);
+      }
+      a.back {
+        color: var(--accent-light);
+        text-decoration: none;
+        font-size: 13.5px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <div class="wordmark"><span class="dot"></span><span>PACE</span></div>
+
+        <div id="form-view">
+          <h1>Training that adapts<br /><em>to your real life.</em></h1>
+          <p class="lede">
+            Pace is an AI endurance coach for working adults training for triathlon — it rebuilds
+            your week around missed workouts, bad sleep, and packed calendars instead of
+            guilt-tripping you for it. Join the waitlist for early access.
+          </p>
+          <div class="perk">
+            <span class="icon">&#9733;</span>
+            <span class="copy"
+              ><strong>Founding Athletes:</strong> the first 500 to join get 3 months free at launch
+              and priority beta access.</span
+            >
+          </div>
+          <form id="waitlist-form">
+            <div>
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="alex@email.com" required />
+            </div>
+            <div>
+              <label for="distance_interest">Training for</label>
+              <select id="distance_interest" name="distance_interest">
+                <option value="">Prefer not to say</option>
+                <option value="sprint">Sprint</option>
+                <option value="olympic">Olympic</option>
+                <option value="70.3">70.3 (Half Iron)</option>
+                <option value="ironman">Full Iron</option>
+                <option value="not_sure">Not sure yet</option>
+              </select>
+            </div>
+            <p class="error" id="form-error" hidden></p>
+            <button type="submit" id="submit-btn">Join the waitlist</button>
+          </form>
+          <p class="fineprint">
+            We'll only email you about your Pace invite — no spam, no lists sold, ever.
+          </p>
+          <p class="count" id="count-line" hidden></p>
+        </div>
+
+        <div id="success-view" hidden>
+          <div class="success-icon">&#10003;</div>
+          <h1 id="success-heading">You're on the list.</h1>
+          <p class="position" id="success-position"></p>
+          <a class="back" href="#" id="back-link">&larr; Back</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Same-origin JSON API — this page is a static Supabase Storage asset,
+      // not a Claude artifact, so it isn't subject to the artifact CDN/fetch
+      // allowlist; a plain fetch() to the project's own Edge Function works
+      // like it would on any ordinary website.
+      var API_URL = '/functions/v1/waitlist';
+
+      var formView = document.getElementById('form-view');
+      var successView = document.getElementById('success-view');
+      var form = document.getElementById('waitlist-form');
+      var errorEl = document.getElementById('form-error');
+      var countLine = document.getElementById('count-line');
+      var submitBtn = document.getElementById('submit-btn');
+
+      function pluralAthletes(n) {
+        return n === 1 ? 'athlete' : 'athletes';
+      }
+
+      function loadCount() {
+        fetch(API_URL, { headers: { Accept: 'application/json' } })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            if (typeof data.count === 'number' && data.count > 0) {
+              countLine.innerHTML =
+                '<strong>' +
+                data.count.toLocaleString() +
+                '</strong> ' +
+                pluralAthletes(data.count) +
+                ' already on the list';
+              countLine.hidden = false;
+            }
+          })
+          .catch(function () {
+            /* count is a nice-to-have, fail silent */
+          });
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errorEl.hidden = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Joining…';
+
+        var email = document.getElementById('email').value.trim();
+        var distance = document.getElementById('distance_interest').value;
+
+        fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ email: email, distance_interest: distance, source: 'landing' }),
+        })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              return { ok: res.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            if (!result.ok) {
+              errorEl.textContent = result.data.error || 'Something went wrong — try again.';
+              errorEl.hidden = false;
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Join the waitlist';
+              return;
+            }
+            document.getElementById('success-heading').textContent = result.data.alreadyIn
+              ? "You're already in."
+              : "You're on the list.";
+            document.getElementById('success-position').innerHTML =
+              "You're <strong>#" +
+              result.data.position.toLocaleString() +
+              '</strong> on the Pace waitlist. We’ll email you as soon as your invite is ready.';
+            formView.hidden = true;
+            successView.hidden = false;
+          })
+          .catch(function () {
+            errorEl.textContent = 'Something went wrong — check your connection and try again.';
+            errorEl.hidden = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Join the waitlist';
+          });
+      });
+
+      document.getElementById('back-link').addEventListener('click', function (e) {
+        e.preventDefault();
+        successView.hidden = true;
+        formView.hidden = false;
+        form.reset();
+        errorEl.hidden = true;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Join the waitlist';
+      });
+
+      loadCount();
+    </script>
+  </body>
+</html>
