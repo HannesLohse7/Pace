@@ -4,6 +4,7 @@ export { ChevronLeftIcon } from './ChevronLeftIcon';
 export { CoachIcon } from './CoachIcon';
 export { DragHandleIcon } from './DragHandleIcon';
 export { HomeIcon } from './HomeIcon';
+export { MicIcon } from './MicIcon';
 export { ProfileIcon } from './ProfileIcon';
 export { ProgressIcon } from './ProgressIcon';
 export { TrainingIcon } from './TrainingIcon';
