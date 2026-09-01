@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
 import { AppText, PrimaryButton, Screen } from '@/shared/components';
 
@@ -6,6 +7,7 @@ import { useOnboardingNavigation } from '../hooks/useOnboardingNavigation';
 
 export function WelcomeScreen() {
   const { goNext } = useOnboardingNavigation('welcome');
+  const router = useRouter();
 
   return (
     <Screen edges={['top', 'bottom']} className="px-screen-x pb-[26px]">
@@ -27,9 +29,11 @@ export function WelcomeScreen() {
 
       <PrimaryButton label="Get Started" onPress={goNext} fullWidth />
 
-      <AppText className="mt-md text-center text-[13px] text-color-tertiary">
-        I already have an account
-      </AppText>
+      <Pressable onPress={() => router.push('/sign-in')} hitSlop={8}>
+        <AppText className="mt-md text-center text-[13px] text-color-tertiary">
+          I already have an account
+        </AppText>
+      </Pressable>
     </Screen>
   );
 }
