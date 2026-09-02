@@ -1,37 +1,86 @@
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
 
+import { useSession } from '@/lib/supabase/useSession';
 import { AppText, Screen } from '@/shared/components';
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 import { ChatInputBar, ChatMessageBubble, SuggestedPromptRow } from '../components';
-import { cannedReplies, initialChatMessages, suggestedPrompts } from '../data/mockCoachData';
+import { cannedReplies, suggestedPrompts } from '../data/mockCoachData';
+import { useRecentAdaptationEvents } from '../hooks/useRecentAdaptationEvents';
 import type { ChatMessage } from '../types/coach';
+import { buildCoachTranscript } from '../utils/buildCoachTranscript';
 
 /**
- * Coach — the last of the original 5 MVP milestone screens. Ported from
- * the design source's Coach tab: a scrolling chat transcript (with a
- * distinct "schedule adjustment" treatment for plan-change explanations,
- * separate from ordinary chat bubbles), a row of suggested prompts, and
- * a text composer.
+ * Coach — the last of the original 5 MVP milestone screens, and the
+ * last to move off mock data (#16). The chat mechanic itself still has
+ * no real AI/LLM integration anywhere in this project (see
+ * ARCHITECTURE.md — even the adaptive engine is deterministic rules,
+ * not free-form generation): sending a message still echoes one of
+ * three scripted `cannedReplies`, an honest placeholder, not a
+ * disguised fake backend. That part is unchanged and out of scope here.
  *
- * There is no real AI/LLM integration anywhere in this project yet (see
- * ARCHITECTURE.md — even the adaptive engine itself is still
- * unimplemented, deterministic-rules-only by design, not free-form
- * generation). Sending a message appends it to the transcript and
- * echoes back one of three scripted `cannedReplies`, exactly matching
- * the design source's own `canned()` mock — an honest placeholder, not
- * a disguised fake backend. Wiring this to a real assistant is a
- * separate, later milestone.
+ * What changed: the transcript this screen *opens* with is no longer
+ * the hardcoded "Alex Rivera, recovery 72" mock persona. It's seeded
+ * from the athlete's own real `adaptation_event` history via
+ * `buildCoachTranscript.ts` — the same table Workout Detail's HISTORY
+ * section reads, just across every workout instead of one. Real
+ * schedule-adjustment explanations get the same "SCHEDULE ADJUSTMENT"
+ * recommendation bubble the design source always had; they're just
+ * genuine now instead of a scripted example.
  *
- * Chat state is local `useState`, not a Zustand store — nothing else
- * reads it (unlike e.g. `useTrainingStore`, which Workout Detail also
- * consumes), matching the same "keep it local until something else
- * needs it" precedent as Profile's notification/connected-service
- * toggles. Expo Router's tab navigator keeps visited tabs mounted by
- * default, so this still survives switching tabs within a session.
+ * Split into this data-fetching wrapper (loading/error states, same
+ * pattern as Home/Training/Progress) and `CoachChat` below, which owns
+ * the interactive session and is only ever mounted once the real seed
+ * transcript is in hand — its `useState` initializer reads that seed
+ * exactly once on mount, so a later background refetch (e.g. tab
+ * refocus) can't clobber messages the athlete has already sent this
+ * session the way re-deriving from fresh query data on every render
+ * would.
  */
 export function CoachScreen() {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const colors = useThemeColors();
+  const { session } = useSession();
+  const athleteId = session?.user.id;
+  const { data: events, isLoading, isError, refetch } = useRecentAdaptationEvents(athleteId);
+
+  if (isLoading) {
+    return (
+      <Screen edges={['top', 'bottom']} className="items-center justify-center">
+        <ActivityIndicator color={colors.accent} />
+      </Screen>
+    );
+  }
+
+  if (isError || !events) {
+    return (
+      <Screen edges={['top', 'bottom']} className="items-center justify-center px-screen-x">
+        <AppText className="text-center text-body text-color-secondary">
+          Couldn’t load your coach right now.
+        </AppText>
+        <Pressable onPress={() => refetch()} className="mt-md">
+          <AppText className="text-body-sm font-semibold text-accent">Try again</AppText>
+        </Pressable>
+      </Screen>
+    );
+  }
+
+  return <CoachChat seedMessages={buildCoachTranscript(events)} />;
+}
+
+interface CoachChatProps {
+  seedMessages: ChatMessage[];
+}
+
+function CoachChat({ seedMessages }: CoachChatProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(seedMessages);
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 

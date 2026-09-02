@@ -1,35 +1,20 @@
 /**
- * Mock data for the Coach screen, ported from `state.chatMessages` and
- * `suggestedPrompts` on `design/Triathlon Coach App.dc.html`'s
- * `Component` class — same athlete/week as every other screen's mock
- * data (Alex Rivera, recovery 72, Wednesday's bike-threshold session).
+ * Remaining mock data for the Coach screen. `initialChatMessages` (the
+ * "Alex Rivera, recovery 72" scripted transcript) was removed in #16 —
+ * Coach's opening transcript is now real, built from the athlete's own
+ * `adaptation_event` history (`utils/buildCoachTranscript.ts`), not a
+ * fabricated persona example.
  *
- * `cannedReplies` ports the source's own `canned()` method — a
- * hardcoded, randomly-picked reply used whenever the athlete sends a
- * message. There is no real AI/LLM call anywhere in this project yet
- * (per ARCHITECTURE.md, even the adaptive engine itself is still
- * unimplemented — deterministic rules by design, not free-form
- * generation), so this chat is, like the source, an honest scripted
- * mock rather than a fake backend pretending to be smarter than it is.
+ * `suggestedPrompts` and `cannedReplies` are still exactly what they
+ * were: ported from `design/Triathlon Coach App.dc.html`'s
+ * `suggestedPrompts` and `canned()` method. There is no real AI/LLM
+ * call anywhere in this project (per ARCHITECTURE.md, even the
+ * adaptive engine itself is deterministic rules, not free-form
+ * generation), so free-text chat send/reply stays an honest scripted
+ * mock — wiring it to a real assistant is a separate, later milestone,
+ * out of scope for #16 (which only made the *opening* explanations
+ * real, not the ongoing conversation).
  */
-import type { ChatMessage } from '../types/coach';
-
-export const initialChatMessages: ChatMessage[] = [
-  {
-    role: 'assistant',
-    text: 'Good morning, Alex. Recovery is at 72 today — solid enough to keep today’s bike threshold session as planned.',
-  },
-  { role: 'user', text: 'Why did you move my long run?' },
-  {
-    role: 'assistant',
-    text: 'Your recovery dropped from 81 to 68 after Sunday’s long run, mostly driven by lower HRV overnight.',
-  },
-  {
-    role: 'recommendation',
-    text: 'Move tomorrow’s long run to Friday because recovery is lower than expected.',
-  },
-];
-
 export const suggestedPrompts = [
   'Why this workout today?',
   'Move my long run',
