@@ -30,7 +30,7 @@
 | 4 | COROS API | Gated, discretionary per-application review; no published rate limits/data types. Apply early, treat as v2 unless approved quickly. |
 | 5 | Google Health Connect | Android only; defer to v2 if launching iOS-first. Design the provider abstraction now so this slots in later. |
 
-**Architectural implication:** build a provider-independent wearable schema/abstraction before integrating every provider — Garmin/COROS gating makes this strategically important, not just clean code.
+**Architectural implication:** build a provider-independent wearable schema/abstraction before integrating every provider — Garmin/COROS gating makes this strategically important, not just clean code. This is now built (`wearable_connection`/`recovery_signal`, see DATABASE.md) with priority 1 (Apple HealthKit) as the one real provider (resting HR + HRV, added 2026-09-02) — see ROADMAP.md for the Expo Go → dev client caveat still blocking real-device verification, and for why sleep wasn't included in v1.
 
 ## Source
 

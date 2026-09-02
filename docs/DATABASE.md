@@ -22,7 +22,7 @@ Research-recommended minimum production-grade objects:
 
 **`adaptation_event` is essential, not optional** — it's the audit trail of what changed, why, and which engine version made the decision. Directly required by the AI rule that the system must always explain its reasoning, and by the legal need to justify any automated change to a user's plan.
 
-`adaptation_event` and `engine_version` are built (`adaptation_audit_schema` migration, 2026-09-01) — see below. `calendar_connection`, `calendar_event_snapshot`, `availability_rule`, `wearable_connection`, `activity_import`, `recovery_signal` are still deferred; none of those features exist yet, so there's nothing real to back.
+`adaptation_event` and `engine_version` are built (`adaptation_audit_schema` migration, 2026-09-01) — see below. `wearable_connection` and `recovery_signal` are built too (`wearable_schema` migration, 2026-09-02) — see below. `calendar_connection`, `calendar_event_snapshot`, `availability_rule`, `activity_import` are still deferred; none of those features exist yet, so there's nothing real to back.
 
 ### `adaptation_event`
 
@@ -41,6 +41,12 @@ Reference table naming which version of the adaptation engine's rule set made a 
 ### `training_phase` — new real reader (added 2026-09-01)
 
 Already written by `lib/planGenerator/generatePlan.ts` (`name` is CHECK-constrained to exactly `'Base'` / `'Build'` / `'Peak'` / `'Taper'` — confirmed against the live constraint, not just the generator's own `PhaseName` type). `lib/adaptation/guardrails/checkTaperLoadGuardrail.ts` is a new reader: given a calendar date, checks whether it falls within an athlete's `Taper` phase (`start_date`/`end_date` bounds) to decide whether a load-increasing reschedule should be blocked. No schema change — just a new consumer of data that was already real.
+
+### `wearable_connection` and `recovery_signal` (added 2026-09-02)
+
+`wearable_connection`: one row per athlete/provider (`unique(athlete_id, provider)`), `provider` CHECK-constrained to `'apple_health' | 'garmin' | 'coros' | 'strava' | 'zwift' | 'google_health_connect'`, `status` (`'connected' | 'disconnected'`, default `'connected'`), `connected_at`, `last_synced_at`. `recovery_signal`: one row per athlete/day/source (`unique(athlete_id, signal_date, source)`), `resting_hr_bpm` (integer), `hrv_ms` (numeric), `sleep_duration_min` (integer, nullable — column exists for a future sleep-analysis reader, unpopulated by any writer today), `source` CHECK-constrained to a narrower `'apple_health' | 'garmin' | 'coros' | 'manual'` (only providers that actually supply recovery biometrics — Strava/Zwift are pure activity sources and don't belong here). Both follow the standard `for all using/with check (auth.uid() = athlete_id)` RLS pattern. As with every other CHECK constraint in this schema, these values aren't reflected in Supabase's generated TypeScript types (`provider`/`status`/`source` come back as plain `string`) — `lib/wearables/types.ts` re-declares them as real union types for app code to use instead.
+
+**Real writer as of 2026-09-02**: `lib/wearables/syncAppleHealthRecoverySignals.ts`, called from onboarding's Wearables step (`useConnectAppleHealth` hook) — the only real path today, and it only ever writes `provider`/`source = 'apple_health'`. The Garmin/COROS/Strava/Zwift/Google Health Connect CHECK values exist for a provider-independent shape (per API.md's note that this matters strategically ahead of Garmin/COROS API approval) but have no writer yet. No reader anywhere yet — nothing in the app displays `wearable_connection`/`recovery_signal` data today; onboarding's own toggle state (whether the Wearables step shows "Connected") comes from a successful sync call succeeding, not from reading these tables back.
 
 ## RLS & security
 
