@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
+import { useConnectGoogleCalendar } from '@/features/calendar/hooks/useConnectGoogleCalendar';
+import { useDisconnectGoogleCalendar } from '@/features/calendar/hooks/useDisconnectGoogleCalendar';
 import { ConnectToggleBadge } from '@/features/onboarding/components/ConnectToggleBadge';
+import { useSession } from '@/lib/supabase/useSession';
 import { AppText, Screen, SettingsRow, Switch } from '@/shared/components';
 import { useProfileStore, useSettingsStore } from '@/shared/store';
 import { useThemeColors, useThemeOverride } from '@/shared/theme/ThemeProvider';
@@ -10,10 +13,9 @@ import { useThemeColors, useThemeOverride } from '@/shared/theme/ThemeProvider';
 import { getInitials } from '../utils/getInitials';
 
 type ConnectedServiceKey =
-  'googleCalendar' | 'appleCalendar' | 'appleHealth' | 'garmin' | 'coros' | 'strava' | 'zwift';
+  'appleCalendar' | 'appleHealth' | 'garmin' | 'coros' | 'strava' | 'zwift';
 
 const CONNECTED_SERVICE_DEFS: { key: ConnectedServiceKey; label: string }[] = [
-  { key: 'googleCalendar', label: 'Google Calendar' },
   { key: 'appleCalendar', label: 'Apple Calendar' },
   { key: 'appleHealth', label: 'Apple Health' },
   { key: 'garmin', label: 'Garmin' },
@@ -36,9 +38,16 @@ const CONNECTED_SERVICE_DEFS: { key: ConnectedServiceKey; label: string }[] = [
  * (matching the source's own `devices` mock: Garmin/Apple Health/Zwift
  * connected, COROS not) rather than all-disconnected, so the screen
  * reads as a populated profile rather than an empty one.
+ *
+ * Google Calendar is deliberately NOT in this map (see below) — it's the
+ * one service with a real backend behind it as of 2026-09-02, so leaving
+ * its badge wired to this same local mock state would itself become the
+ * "looks connected but isn't" problem this comment is about, just
+ * inverted. Every other row here is still genuinely mock, for the same
+ * reason it always was: no real backend exists for Apple Calendar/
+ * HealthKit-on-this-screen/Garmin/COROS/Strava/Zwift yet.
  */
 const INITIAL_CONNECTED_SERVICES: Record<ConnectedServiceKey, boolean> = {
-  googleCalendar: false,
   appleCalendar: false,
   appleHealth: true,
   garmin: true,
@@ -57,6 +66,19 @@ const INITIAL_CONNECTED_SERVICES: Record<ConnectedServiceKey, boolean> = {
  *
  * Subscription isn't built — not asked for this checkpoint and there's
  * no real entitlement/subscription state to show yet.
+ *
+ * **Google Calendar's row is real** (added 2026-09-02) — this is now its
+ * permanent home, not just onboarding's Calendar step. Onboarding's real
+ * account-creation call (`supabase.auth.signUp`) only fires on the very
+ * last onboarding screen (Generating), which comes *after* onboarding's
+ * own Calendar step — so there is never a signed-in athlete yet at the
+ * point onboarding shows that Connect button, and it can't succeed from
+ * there. Profile is reached only once an athlete is actually signed in,
+ * so it's the one place "Connect Google Calendar" can work today, and
+ * it's also the sensible long-term home for reconnect/disconnect (an
+ * athlete revoking access from Google's side, say). Onboarding's own
+ * Calendar step is unchanged — still real, still there, just can't be
+ * exercised until this screen exists, which is what this change is for.
  */
 export function ProfileScreen() {
   const router = useRouter();
@@ -65,6 +87,31 @@ export function ProfileScreen() {
   const profile = useProfileStore((s) => s.profile);
   const units = useSettingsStore((s) => s.units);
   const setUnits = useSettingsStore((s) => s.setUnits);
+
+  const { session } = useSession();
+  const athleteId = session?.user.id;
+  const google = useConnectGoogleCalendar(athleteId);
+  const disconnectGoogle = useDisconnectGoogleCalendar(athleteId);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  const googleConnected = google.status === 'connected';
+  const googleBusy = google.isConnectPending || google.isWaiting || disconnectGoogle.isPending;
+
+  const handleGooglePress = () => {
+    if (googleBusy) return;
+    setGoogleError(null);
+    if (googleConnected) {
+      disconnectGoogle.mutate(undefined, {
+        onError: () => setGoogleError("Couldn't disconnect — try again."),
+      });
+    } else {
+      google.connect();
+    }
+  };
+
+  const googleStatusLine = googleBusy
+    ? 'Waiting for Google…'
+    : (googleError ?? (google.connectError ? "Couldn't connect — try again." : null));
 
   // Visual stub only — no real push-notification permission request or
   // wiring. Matches the same UI-only reasoning as onboarding's
@@ -144,6 +191,17 @@ export function ProfileScreen() {
         CONNECTED SERVICES
       </AppText>
       <View>
+        <View className="border-t border-border px-screen-x py-md">
+          <View className="flex-row items-center gap-sm">
+            <AppText className="flex-1 text-[14px] text-color-primary">Google Calendar</AppText>
+            <ConnectToggleBadge connected={googleConnected} onPress={handleGooglePress} />
+          </View>
+          {googleStatusLine && (
+            <AppText className="mt-[6px] text-[11.5px] text-color-tertiary">
+              {googleStatusLine}
+            </AppText>
+          )}
+        </View>
         {CONNECTED_SERVICE_DEFS.map((service) => (
           <SettingsRow key={service.key} label={service.label}>
             <ConnectToggleBadge
