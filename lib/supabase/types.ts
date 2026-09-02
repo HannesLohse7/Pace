@@ -1,6 +1,7 @@
 /**
  * Generated from the live Supabase schema (`mcp__Supabase__generate_typescript_types`)
- * against the `core_schema` + `waitlist_signups` + `adaptation_audit_schema` migrations.
+ * against the `core_schema` + `waitlist_signups` + `adaptation_audit_schema` +
+ * `wearable_schema` migrations, plus the `waitlist_signups_by_day` view.
  * Regenerate after any schema migration — don't hand-edit.
  */
 
@@ -189,6 +190,47 @@ export type Database = {
           },
         ];
       };
+      recovery_signal: {
+        Row: {
+          athlete_id: string;
+          created_at: string;
+          hrv_ms: number | null;
+          id: string;
+          resting_hr_bpm: number | null;
+          signal_date: string;
+          sleep_duration_min: number | null;
+          source: string;
+        };
+        Insert: {
+          athlete_id: string;
+          created_at?: string;
+          hrv_ms?: number | null;
+          id?: string;
+          resting_hr_bpm?: number | null;
+          signal_date: string;
+          sleep_duration_min?: number | null;
+          source?: string;
+        };
+        Update: {
+          athlete_id?: string;
+          created_at?: string;
+          hrv_ms?: number | null;
+          id?: string;
+          resting_hr_bpm?: number | null;
+          signal_date?: string;
+          sleep_duration_min?: number | null;
+          source?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recovery_signal_athlete_id_fkey';
+            columns: ['athlete_id'];
+            isOneToOne: false;
+            referencedRelation: 'athlete_profile';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       training_phase: {
         Row: {
           athlete_id: string;
@@ -305,6 +347,44 @@ export type Database = {
           source?: string | null;
         };
         Relationships: [];
+      };
+      wearable_connection: {
+        Row: {
+          athlete_id: string;
+          connected_at: string;
+          created_at: string;
+          id: string;
+          last_synced_at: string | null;
+          provider: string;
+          status: string;
+        };
+        Insert: {
+          athlete_id: string;
+          connected_at?: string;
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          provider: string;
+          status?: string;
+        };
+        Update: {
+          athlete_id?: string;
+          connected_at?: string;
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          provider?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'wearable_connection_athlete_id_fkey';
+            columns: ['athlete_id'];
+            isOneToOne: false;
+            referencedRelation: 'athlete_profile';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       workout: {
         Row: {
@@ -530,7 +610,14 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      waitlist_signups_by_day: {
+        Row: {
+          cumulative_signups: number | null;
+          signup_date: string | null;
+          signups: number | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       [_ in never]: never;

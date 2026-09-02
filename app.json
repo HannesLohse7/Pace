@@ -32,7 +32,15 @@
           "imageWidth": 76
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Pace uses Apple Health to sync your resting heart rate and HRV, so your coach can better gauge your recovery.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
