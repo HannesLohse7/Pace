@@ -14,7 +14,7 @@
 
 | Provider | Notes | MVP status |
 |---|---|---|
-| Google Calendar API | REST, Events resource (start/end, recurrence, transparency, attendees, working location, focus time). Freebusy: `POST /calendar/v3/freeBusy`. Quota: 10,000 req/min/project, 600 req/min/user/project. | **Primary — build first.** Reliable free/busy + read/write + recurring events. |
+| Google Calendar API | REST, Events resource (start/end, recurrence, transparency, attendees, working location, focus time). Freebusy: `POST /calendar/v3/freeBusy`. Quota: 10,000 req/min/project, 600 req/min/user/project. | **v1 shipped 2026-09-02 — freebusy conflict-checking only.** Connect/disconnect real and live; full event read/write deferred (needs a "sensitive" OAuth scope + Google's app-verification review — `calendar.freebusy` alone is non-sensitive and skips that). See docs/ROADMAP.md and docs/DATABASE.md for the OAuth architecture and schema. |
 | Apple EventKit | Local/on-device only (not a server API). `EKEventStore` requires explicit access request. Supports recurring events, alarms, change notifications. | **Build first**, for iOS local calendar visibility/write-back. Keep canonical plan in Supabase so the app reasons consistently without EventKit access. |
 | Microsoft Graph (Outlook) | `calendar:getSchedule` for free/busy; 130,000 req/10s global app limit; personal MS accounts not supported for getSchedule. | **Postponed** unless beta demand is high — enterprise/admin consent adds disproportionate complexity for MVP value. |
 
