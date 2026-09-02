@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Google Calendar — Pace</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0b0c0f" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0c0f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%236d63e0'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --background: #0b0c0f;
+        --surface: #15171c;
+        --border: #2a2d33;
+        --text-primary: #f2f3f5;
+        --text-secondary: #a6acb8;
+        --success: #10b981;
+        --danger: #dc2626;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background);
+        color: var(--text-primary);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        padding: 24px;
+      }
+      .card {
+        max-width: 360px;
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px 28px;
+        text-align: center;
+      }
+      .badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 24px;
+      }
+      .badge.ok {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+      }
+      .badge.bad {
+        background: rgba(220, 38, 38, 0.15);
+        color: var(--danger);
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="badge" id="badge"></div>
+      <h1 id="title"></h1>
+      <p id="message"></p>
+    </div>
+
+    <script>
+      // This page is deliberately static — no logic that matters runs here.
+      // The real OAuth exchange (and the decision of whether it succeeded)
+      // already happened server-side, in the Edge Function that redirected
+      // here; this just displays which of a small, fixed set of outcomes
+      // that was, via a `status` query param it fully controls. See
+      // supabase/functions/google-calendar-oauth-callback/index.ts for why
+      // this page exists at all instead of the Edge Function rendering its
+      // own HTML directly: this project's Supabase gateway coerces every
+      // non-JSON Edge Function response to `text/plain` before it reaches a
+      // browser (the same reason the waitlist page lives here instead of
+      // being served from Supabase — see docs/ROADMAP.md), so an HTML body
+      // returned from the function shows up as raw source text instead of
+      // rendering. A redirect has no body for that coercion to mangle, only
+      // a Location header — so the function now redirects here instead.
+      //
+      // `status` is read against a fixed whitelist below and never written
+      // into the page as raw text, so there's nothing here for an attacker
+      // to inject via the query string even though this reads location.search.
+      var OUTCOMES = {
+        connected: {
+          ok: true,
+          title: 'Connected',
+          message: 'Google Calendar is connected. You can close this and return to Pace.',
+        },
+        declined: {
+          ok: false,
+          title: 'Not connected',
+          message:
+            'You declined on Google’s consent screen. Go back to Pace and tap Connect to try again.',
+        },
+        expired: {
+          ok: false,
+          title: 'Link expired',
+          message:
+            'This connection link was already used or has expired. Go back to Pace and tap Connect to try again.',
+        },
+        missing: {
+          ok: false,
+          title: 'Something went wrong',
+          message:
+            'This link is missing information Pace needs. Go back to Pace and tap Connect to try again.',
+        },
+        failed: {
+          ok: false,
+          title: 'Connection failed',
+          message:
+            'Google couldn’t confirm the connection. Go back to Pace and tap Connect to try again.',
+        },
+      };
+
+      var params = new URLSearchParams(window.location.search);
+      var outcome = OUTCOMES[params.get('status')] || {
+        ok: false,
+        title: 'Something went wrong',
+        message: 'Go back to Pace and tap Connect to try again.',
+      };
+
+      document.getElementById('badge').className = 'badge ' + (outcome.ok ? 'ok' : 'bad');
+      document.getElementById('badge').textContent = outcome.ok ? '✓' : '!';
+      document.getElementById('title').textContent = outcome.title;
+      document.getElementById('message').textContent = outcome.message;
+      document.title = outcome.title + ' — Pace';
+    </script>
+  </body>
+</html>

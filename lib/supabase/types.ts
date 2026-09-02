@@ -1,7 +1,7 @@
 /**
  * Generated from the live Supabase schema (`mcp__Supabase__generate_typescript_types`)
  * against the `core_schema` + `waitlist_signups` + `adaptation_audit_schema` +
- * `wearable_schema` migrations, plus the `waitlist_signups_by_day` view.
+ * `wearable_schema` + `calendar_schema` migrations, plus the `waitlist_signups_by_day` view.
  * Regenerate after any schema migration — don't hand-edit.
  */
 
@@ -127,6 +127,105 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      calendar_connection: {
+        Row: {
+          athlete_id: string;
+          connected_at: string;
+          google_calendar_id: string;
+          id: string;
+          last_synced_at: string | null;
+          provider: string;
+          status: string;
+        };
+        Insert: {
+          athlete_id: string;
+          connected_at?: string;
+          google_calendar_id?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          provider: string;
+          status?: string;
+        };
+        Update: {
+          athlete_id?: string;
+          connected_at?: string;
+          google_calendar_id?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          provider?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_connection_athlete_id_fkey';
+            columns: ['athlete_id'];
+            isOneToOne: false;
+            referencedRelation: 'athlete_profile';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      calendar_connection_request: {
+        Row: {
+          athlete_id: string;
+          created_at: string;
+          id: string;
+        };
+        Insert: {
+          athlete_id: string;
+          created_at?: string;
+          id?: string;
+        };
+        Update: {
+          athlete_id?: string;
+          created_at?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_connection_request_athlete_id_fkey';
+            columns: ['athlete_id'];
+            isOneToOne: false;
+            referencedRelation: 'athlete_profile';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      calendar_oauth_token: {
+        Row: {
+          access_token: string;
+          connection_id: string;
+          expires_at: string;
+          id: string;
+          refresh_token: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_token: string;
+          connection_id: string;
+          expires_at: string;
+          id?: string;
+          refresh_token: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string;
+          connection_id?: string;
+          expires_at?: string;
+          id?: string;
+          refresh_token?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_oauth_token_connection_id_fkey';
+            columns: ['connection_id'];
+            isOneToOne: true;
+            referencedRelation: 'calendar_connection';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       engine_version: {
         Row: {
