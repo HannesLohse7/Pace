@@ -62,11 +62,31 @@ Google Calendar's connect flow, split into three tables by trust level — the f
 
 ## RLS & security
 
-Established pattern for athlete-owned tables: `for all using (auth.uid() = athlete_id) with check (auth.uid() = athlete_id)` (or `= id` for `athlete_profile`). `adaptation_event` deviates deliberately (insert+select only — see above). `engine_version` is read-only to authenticated users, write-only via service role. 🟡 **TODO:** broader audit considerations (e.g. whether `adaptation_event` needs tamper-evidence beyond RLS) not yet designed.
+Established pattern for athlete-owned tables: `for all using (auth.uid() = athlete_id) with check (auth.uid() = athlete_id)` (or `= id` for `athlete_profile`). `adaptation_event` deviates deliberately (insert+select only — see above). `engine_version` is read-only to authenticated users, write-only via service role.
+
+**`adaptation_event` tamper-evidence — answered (2026-09-02), recommendation not yet applied.** The real threat RLS already closes: an authenticated athlete rewriting or deleting their own history through the app's normal API surface (no update/delete policy exists, so PostgREST refuses both, full stop). What RLS *can't* close, by construction, is the service role and the project's Postgres owner — both bypass RLS entirely, so "does this need protection beyond RLS" really means "against those two." True tamper-evidence against a compromised service-role key or a malicious superuser (hash-chained rows, an external write-once log) is real engineering, and disproportionate for an MVP with no regulatory audit requirement yet — this is postponed for the same reason CTL/ATL/TSB dashboards and the coach marketplace are (see ROADMAP.md's "Explicitly postponed"), not because the question doesn't matter.
+
+The one thing that *is* proportionate now: a database-level trigger that unconditionally rejects `UPDATE`/`DELETE` on `adaptation_event`, as defense-in-depth against an *accidental* regression rather than a hostile one — this table is the one place in the schema that deliberately deviates from the athlete-owned `for all` default (see above), which makes it exactly the table a future contributor could accidentally "fix" back to the default pattern by copy-pasting it, not noticing the deviation was the point. RLS alone doesn't protect against that; a trigger that fires regardless of which policy is active would. Recommended, not yet applied (a schema change to the live project, so it's queued for the user to approve rather than pushed unilaterally):
+
+```sql
+create or replace function reject_adaptation_event_mutation()
+returns trigger language plpgsql as $$
+begin
+  raise exception 'adaptation_event is append-only; % is not permitted', tg_op;
+end;
+$$;
+
+create trigger adaptation_event_append_only
+  before update or delete on adaptation_event
+  for each row execute function reject_adaptation_event_mutation();
+```
 
 ## Migrations
 
-🟡 **TODO:** Naming conventions and rollback plan not yet decided.
+**Filled in (2026-09-02)** — documenting the convention every migration applied so far already follows, not introducing a new one:
+
+- **Naming**: Supabase's own default shape, `<timestamp>_<snake_case_description>.sql` (`20260901181603_adaptation_audit_schema`, etc. — see the live list via `list_migrations`), applied through the Supabase MCP tools rather than a local Supabase CLI. Within that, three description patterns have emerged in practice: `<domain>_schema` for a migration that creates a related group of tables (`core_schema`, `adaptation_audit_schema`, `wearable_schema`, `calendar_schema`), `seed_<table>_<value>` for a data-only insert into a reference table (`seed_engine_version_v1`), and `create_<object>` for a single new object that isn't a table (`create_waitlist_signups_by_day_view`). A new migration should fit one of these three, or make the case for a fourth explicitly rather than inventing an ad hoc name.
+- **Rollback plan**: there is no down-migration mechanism in this workflow — `apply_migration` (the tool every migration above went through) applies forward-only SQL with no paired `.down.sql`, and nothing here uses the Supabase CLI's local migration files where a hand-written down-migration would even have somewhere to live. The real rollback plan is therefore **write a new forward migration that reverses the change** (drop the column/table just added, restore the previous constraint, etc.) rather than "undo" the original one — which also means every migration should be written so a reversal is actually possible: prefer additive changes (a new nullable column, a new table) over destructive ones (dropping/renaming a column still read by shipped app code) wherever the schema change allows it, since an additive migration's reversal is a clean drop, while a destructive one's reversal may have already lost data a rollback can't reconstruct. Nothing in this project's history so far has needed a real rollback — this is the plan for when one does.
 
 ## Related
 
