@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useWorkoutDayCalendarBusy } from '@/features/calendar/hooks/useWorkoutDayCalendarBusy';
 import { TAPER_LOAD_GUARDRAIL_ERROR } from '@/lib/adaptation/guardrails/checkTaperLoadGuardrail';
 import { useSession } from '@/lib/supabase/useSession';
 import { AppText, Screen } from '@/shared/components';
@@ -133,6 +134,18 @@ function TimelineStep({
  * practice it's the engine's own longer explanation showing up under
  * its `summary` line; manual entries (reports, reschedules) never have
  * one, so they render as a single line.
+ *
+ * The calendar note (added 2026-09-02) is the first UI to actually call
+ * `google-calendar-freebusy` — the backend has existed since Google
+ * Calendar connect shipped, but nothing read it until now (see
+ * docs/ROADMAP.md). Deliberately day-level, not a real time-of-day
+ * conflict check: `workout.scheduled_date` has no time of day anywhere
+ * in this schema, so there's no workout start/end to compare against a
+ * calendar event's — see `useWorkoutDayCalendarBusy`'s own doc comment.
+ * Shows nothing for an athlete with no connected calendar (never nudges
+ * them to connect from here) and nothing when the day is clear — only a
+ * quiet note when there's something to actually flag, non-rest workouts
+ * only.
  */
 export function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -147,6 +160,13 @@ export function WorkoutDetailScreen() {
   const reorderWorkout = useReorderWorkout(athleteId);
   const [showMoveOptions, setShowMoveOptions] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
+  // Called unconditionally (rules of hooks) even though `data` isn't
+  // known yet on the first render — the hook itself treats an undefined
+  // `scheduledDate` as "nothing to check," same as a rest day below.
+  const calendarBusy = useWorkoutDayCalendarBusy(
+    athleteId,
+    data && data.workout.discipline !== 'rest' ? data.workout.scheduled_date : undefined,
+  );
 
   if (isLoading) {
     return (
@@ -167,6 +187,12 @@ export function WorkoutDetailScreen() {
   const workout = buildWorkoutDetailViewModel(data);
   const isRest = workout.discipline === 'rest';
   const heroColor = colors.sport[workout.discipline];
+
+  const eventCount = calendarBusy.eventCount ?? 0;
+  const calendarNote =
+    eventCount > 0
+      ? `${eventCount} ${eventCount === 1 ? 'event' : 'events'} on your calendar today.`
+      : null;
 
   const zoneRows: ReactNode[] = [];
   workout.hrZones?.forEach((zone: WorkoutZone, i) => {
@@ -308,6 +334,10 @@ export function WorkoutDetailScreen() {
                 </AppText>
               )}
             </View>
+
+            {calendarNote && (
+              <AppText className="mt-sm text-[12px] text-color-tertiary">{calendarNote}</AppText>
+            )}
 
             <AppText className="mt-md text-[14px] leading-[1.6] text-color-primary">
               {workout.description}

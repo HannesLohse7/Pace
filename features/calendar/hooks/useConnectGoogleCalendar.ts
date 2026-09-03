@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 
 import { buildGoogleCalendarAuthUrl } from '@/lib/calendar/googleCalendarAuthUrl';
-import type { CalendarConnectionStatus } from '@/lib/calendar/types';
 
 import { createCalendarConnectionRequest } from '../services/calendarConnectionRequest';
-import { fetchGoogleCalendarStatus } from '../services/fetchGoogleCalendarStatus';
+import { useGoogleCalendarConnectionStatus } from './useGoogleCalendarConnectionStatus';
 
 const POLL_INTERVAL_MS = 3_000;
 /**
@@ -34,10 +33,7 @@ const CONNECT_WINDOW_MS = 3 * 60 * 1000;
 export function useConnectGoogleCalendar(athleteId: string | undefined) {
   const [waitingSince, setWaitingSince] = useState<number | null>(null);
 
-  const statusQuery = useQuery<CalendarConnectionStatus | null>({
-    queryKey: ['google-calendar-connection', athleteId],
-    queryFn: () => fetchGoogleCalendarStatus(athleteId!),
-    enabled: Boolean(athleteId),
+  const statusQuery = useGoogleCalendarConnectionStatus(athleteId, {
     refetchInterval: waitingSince !== null ? POLL_INTERVAL_MS : false,
   });
 
