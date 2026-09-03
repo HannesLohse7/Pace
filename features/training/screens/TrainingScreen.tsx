@@ -45,7 +45,7 @@ export function TrainingScreen() {
   const colors = useThemeColors();
   const { session } = useSession();
   const athleteId = session?.user.id;
-  const { data, isLoading, isError, refetch } = useTrainingWeek(athleteId);
+  const { data, isLoading, isFetching, isError, refetch } = useTrainingWeek(athleteId);
   const reorderWorkout = useReorderWorkout(athleteId);
 
   const activeIndex = useSharedValue(-1);
@@ -104,7 +104,13 @@ export function TrainingScreen() {
   };
 
   return (
-    <Screen edges={['top', 'bottom']} scroll className="pt-lg pb-2xl">
+    <Screen
+      edges={['top', 'bottom']}
+      scroll
+      className="pt-lg pb-2xl"
+      refreshing={isFetching}
+      onRefresh={refetch}
+    >
       <View className="mb-sm">
         <View className="px-screen-x">
           <AppText className="text-[26px] font-bold tracking-[-0.5px] text-color-primary">

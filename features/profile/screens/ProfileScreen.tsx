@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { useConnectGoogleCalendar } from '@/features/calendar/hooks/useConnectGoogleCalendar';
 import { useDisconnectGoogleCalendar } from '@/features/calendar/hooks/useDisconnectGoogleCalendar';
 import { ConnectToggleBadge } from '@/features/onboarding/components/ConnectToggleBadge';
+import { supabase } from '@/lib/supabase/client';
 import { useSession } from '@/lib/supabase/useSession';
 import { AppText, Screen, SettingsRow, Switch } from '@/shared/components';
 import { useProfileStore, useSettingsStore } from '@/shared/store';
@@ -60,9 +61,20 @@ const INITIAL_CONNECTED_SERVICES: Record<ConnectedServiceKey, boolean> = {
  * Profile shell — Milestone 3 Checkpoint 1 built the header, Race Goal
  * card, and Dark Mode row. Checkpoint 2 added Units, Notifications,
  * Connected Services, and Privacy. Checkpoint 3 adds Edit Profile (real —
- * navigates to a modal, actually mutates `useProfileStore`) and Sign Out
- * (inert — no auth/session concept exists yet, so a working sign-out
- * would simulate a feature that isn't there).
+ * navigates to a modal, actually mutates `useProfileStore`) and Sign Out.
+ *
+ * **Sign Out is real now** (2026-09-02) — it used to be an inert tap
+ * target because no auth/session concept existed yet; that's no longer
+ * true (Google Calendar's real `useSession()` below proves it). Leaving
+ * it inert once a real session existed would have been actively
+ * misleading rather than an honest placeholder — a signed-in athlete
+ * with no way to sign out. It calls `supabase.auth.signOut()` then
+ * `router.replace('/')` rather than relying on `useSession()`'s
+ * `onAuthStateChange` alone: nothing else in the app re-checks session
+ * state once mounted (`(tabs)/_layout.tsx` has no session guard, only
+ * root `app/index.tsx` does), so without an explicit redirect the
+ * athlete would land back on a signed-out Profile screen still sitting
+ * inside the tab navigator instead of onboarding.
  *
  * Subscription isn't built — not asked for this checkpoint and there's
  * no real entitlement/subscription state to show yet.
@@ -121,6 +133,16 @@ export function ProfileScreen() {
   const [connectedServices, setConnectedServices] = useState(INITIAL_CONNECTED_SERVICES);
   const toggleService = (key: ConnectedServiceKey) => {
     setConnectedServices((s) => ({ ...s, [key]: !s[key] }));
+  };
+
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    await supabase.auth.signOut();
+    // Explicit redirect, not a wait-for-`onAuthStateChange` -- see the
+    // doc comment above for why nothing else in the app catches this.
+    router.replace('/');
   };
 
   return (
@@ -226,16 +248,15 @@ export function ProfileScreen() {
           <AppText className="text-[16px] text-color-quaternary">›</AppText>
         </SettingsRow>
 
-        {/*
-          Inert by design: there's no auth/session concept yet, so a
-          working sign-out would simulate a feature that doesn't exist.
-          Tapping this does nothing — no onPress at all, not just a
-          no-op handler, so it's verifiably a dead tap target rather
-          than something that looks wired but silently swallows taps.
-        */}
-        <View className="border-t border-border px-screen-x py-md">
-          <AppText className="text-center text-[14px] font-semibold text-danger">Sign Out</AppText>
-        </View>
+        <Pressable
+          onPress={handleSignOut}
+          disabled={isSigningOut}
+          className="border-t border-border px-screen-x py-md"
+        >
+          <AppText className="text-center text-[14px] font-semibold text-danger">
+            {isSigningOut ? 'Signing out…' : 'Sign Out'}
+          </AppText>
+        </Pressable>
       </View>
     </Screen>
   );

@@ -30,7 +30,7 @@ export function ProgressScreen() {
   const colors = useThemeColors();
   const { session } = useSession();
   const athleteId = session?.user.id;
-  const { data, isLoading, isError, refetch } = useProgress(athleteId);
+  const { data, isLoading, isFetching, isError, refetch } = useProgress(athleteId);
 
   if (isLoading) {
     return (
@@ -56,7 +56,13 @@ export function ProgressScreen() {
   const view = buildProgressViewModel(data);
 
   return (
-    <Screen edges={['top', 'bottom']} scroll className="pb-2xl pt-lg">
+    <Screen
+      edges={['top', 'bottom']}
+      scroll
+      className="pb-2xl pt-lg"
+      refreshing={isFetching}
+      onRefresh={refetch}
+    >
       <AppText className="px-screen-x text-[26px] font-bold tracking-[-0.5px] text-color-primary">
         Progress
       </AppText>

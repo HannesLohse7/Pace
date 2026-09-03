@@ -1,6 +1,11 @@
 import type { ColorPalette } from '@/shared/theme/colors';
 import { fromIsoDate, mondayOnOrBefore, toIsoDate } from '@/shared/utils/date';
-import { formatDateLabel, formatDurationMinutes, formatShortWeekday } from '@/shared/utils/format';
+import {
+  formatDateLabel,
+  formatDurationMinutes,
+  formatGreeting,
+  formatShortWeekday,
+} from '@/shared/utils/format';
 import { computeRaceCountdown } from '@/shared/utils/raceCountdown';
 
 import type { HomeDashboardData, WorkoutRow } from '../services/fetchHomeDashboard';
@@ -101,6 +106,8 @@ function buildWeekStrip(today: Date): WeekDayStatus[] {
 
 export interface HomeViewModel {
   dateLabel: string;
+  /** "Good morning" / "Good afternoon" / "Good evening", from the moment this view model was built. */
+  greeting: string;
   athleteFirstName: string;
   /** Null when today is a rest day (no workout scheduled) but a plan exists. */
   todayWorkout: TodayWorkout | null;
@@ -128,6 +135,7 @@ export function buildHomeViewModel(data: HomeDashboardData, colors: ColorPalette
 
   return {
     dateLabel: formatDateLabel(today),
+    greeting: formatGreeting(today),
     athleteFirstName: data.athleteFirstName,
     todayWorkout: data.todayWorkout ? mapWorkoutToToday(data.todayWorkout, colors) : null,
     weekStrip: buildWeekStrip(today),

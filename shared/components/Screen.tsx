@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
+
+import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -17,12 +19,43 @@ export interface ScreenProps {
    * literal 58px.
    */
   edges?: Edge[];
+  /**
+   * Pull-to-refresh. Only meaningful (and only rendered) when `scroll` is
+   * true, and only when `onRefresh` is supplied — a scrolling screen with
+   * nothing worth manually re-fetching (Coach's chat log, say) should leave
+   * both unset rather than wiring a spinner that would do nothing. Pass a
+   * query's own `isFetching`/`refetch` straight through; `refreshing`
+   * defaults to false so passing `onRefresh` alone still renders correctly.
+   */
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
-export function Screen({ children, scroll = false, className, edges = ['top'] }: ScreenProps) {
+export function Screen({
+  children,
+  scroll = false,
+  className,
+  edges = ['top'],
+  refreshing = false,
+  onRefresh,
+}: ScreenProps) {
+  const colors = useThemeColors();
   const Container = scroll ? ScrollView : View;
   const containerProps = scroll
-    ? { contentContainerClassName: className, className: 'flex-1' }
+    ? {
+        contentContainerClassName: className,
+        className: 'flex-1',
+        ...(onRefresh && {
+          refreshControl: (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
+          ),
+        }),
+      }
     : { className: `flex-1 ${className ?? ''}` };
 
   return (

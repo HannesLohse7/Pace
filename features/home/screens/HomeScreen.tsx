@@ -37,7 +37,7 @@ export function HomeScreen({ onOpenRecovery, onOpenCoach }: HomeScreenProps) {
   const router = useRouter();
   const { session } = useSession();
   const athleteId = session?.user.id;
-  const { data, isLoading, isError, refetch } = useHomeDashboard(athleteId);
+  const { data, isLoading, isFetching, isError, refetch } = useHomeDashboard(athleteId);
 
   // `app/(tabs)/index.tsx` renders `<HomeScreen />` with no props, so
   // workout taps navigate directly rather than through an
@@ -72,14 +72,14 @@ export function HomeScreen({ onOpenRecovery, onOpenCoach }: HomeScreenProps) {
   const view = buildHomeViewModel(data, colors);
 
   return (
-    <Screen scroll className="pb-lg pt-sm">
+    <Screen scroll className="pb-lg pt-sm" refreshing={isFetching} onRefresh={refetch}>
       <View className="flex-row items-start justify-between px-screen-x">
         <View>
           <AppText mono className="mb-[10px] text-eyebrow-sm text-color-quaternary">
             {view.dateLabel}
           </AppText>
           <AppText className="text-display text-color-primary">
-            Good morning,{'\n'}
+            {view.greeting},{'\n'}
             {view.athleteFirstName}.
           </AppText>
         </View>

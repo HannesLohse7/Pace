@@ -13,6 +13,23 @@ export function formatDurationMinutes(totalMinutes: number): string {
   return `${hours} hr ${remainder} min`;
 }
 
+/**
+ * "Good morning" / "Good afternoon" / "Good evening" from the local hour --
+ * Home's header used to hardcode "Good morning" regardless of when the
+ * athlete actually opened the app, which reads as broken on an evening
+ * check-in (this is the one line of copy on the app's first screen, so it's
+ * also the one place a wrong-time-of-day greeting is most visible). Boundaries
+ * match the common convention other fitness apps use (5am/12pm/5pm/9pm), not
+ * anything in the design source -- there was no time-aware version to match.
+ */
+export function formatGreeting(date: Date): string {
+  const hour = date.getHours();
+  if (hour < 5) return 'Good evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 /** e.g. "TUESDAY, JUL 15" -- Home's date-label eyebrow, always uppercase regardless of locale casing. */
 export function formatDateLabel(date: Date): string {
   const formatted = date.toLocaleDateString('en-US', {
