@@ -4,27 +4,33 @@ import { useSession } from '@/lib/supabase/useSession';
 import { AppText, Screen } from '@/shared/components';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
 
-import { ConsistencyGrid } from '../components';
+import { ConsistencyGrid, FitnessChart } from '../components';
 import { useProgress } from '../hooks/useProgress';
 import { buildProgressViewModel } from '../utils/buildProgressViewModel';
 
 /**
- * Progress — real data as of 2026-09-01, but only partly: consistency
- * is the one section anywhere on this screen with a real source
- * (`workout.status`/`scheduled_date`, see `fetchProgress.ts`). The rest
- * — fitness/fatigue trend, VO2 Max/FTP/threshold-pace/CSS-pace stats,
- * monthly mileage, personal records — has no real data source in the
- * schema at all (not unpopulated, genuinely nothing to query): the
- * fitness trend chart is explicitly on ROADMAP.md's postponed list
- * (CTL/ATL/TSB-style dashboards), the stats need a performance-test
- * table that doesn't exist yet, mileage needs a distance field
- * `workout` doesn't have, and PRs need a tracking table that doesn't
- * exist either. Per-user decision (2026-09-01): wire what's real,
- * honest "coming soon" notes for the rest — not fabricated numbers on
- * a screen that would otherwise look fully real, and not silently
- * hidden either. `mockProgressData.ts`/`FitnessChart.tsx`/
- * `MileageChart.tsx` are untouched, still available once there's a
- * real source to feed them.
+ * Progress — two real sections as of 2026-09-06: consistency
+ * (`workout.status`/`scheduled_date`, since 2026-09-01) and the fitness
+ * trend (CTL, derived from real `workout_completion` rows via
+ * `lib/trainingLoad/` — see `fetchProgress.ts`). The rest — VO2 Max/
+ * FTP/threshold-pace/CSS-pace stats, monthly mileage, personal records
+ * — still has no real data source in the schema at all (not
+ * unpopulated, genuinely nothing to query): the stats need a
+ * performance-test table that doesn't exist yet, mileage needs a
+ * distance field `workout` doesn't have, and PRs need a tracking table
+ * that doesn't exist either. Per-user decision (2026-09-01, still
+ * followed): wire what's real, honest "coming soon" notes for the rest
+ * — not fabricated numbers on a screen that would otherwise look fully
+ * real, and not silently hidden either.
+ *
+ * The fitness trend itself degrades the same way: `FitnessChart` only
+ * renders once `buildProgressViewModel` reports at least 2 weekly
+ * points (an athlete with zero or one logged completion has nothing
+ * honest to plot a trend from yet) — otherwise this still shows the
+ * same "coming soon" note, now naming the real reason ("log your first
+ * workout") rather than "needs a connected wearable." `mockProgressData.ts`/
+ * `MileageChart.tsx` are untouched, still available once there's a real
+ * source to feed them.
  */
 export function ProgressScreen() {
   const colors = useThemeColors();
@@ -76,9 +82,13 @@ export function ProgressScreen() {
 
       <View className="mt-2xl px-screen-x">
         <AppText className="mb-[2px] text-eyebrow text-color-tertiary">FITNESS TREND</AppText>
-        <AppText className="mt-xs text-body-sm text-color-secondary">
-          Fitness and form tracking needs a connected wearable or logged effort data — coming soon.
-        </AppText>
+        {view.weeklyFitness ? (
+          <FitnessChart values={view.weeklyFitness} />
+        ) : (
+          <AppText className="mt-xs text-body-sm text-color-secondary">
+            Log your first completed workout to start seeing your fitness trend here.
+          </AppText>
+        )}
       </View>
 
       <View className="mt-2xl px-screen-x">

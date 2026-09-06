@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useWorkoutDayCalendarBusy } from '@/features/calendar/hooks/useWorkoutDayCalendarBusy';
@@ -13,6 +13,7 @@ import { useThemeColors } from '@/shared/theme/ThemeProvider';
 import { addDays, mondayOnOrBefore, toIsoDate } from '@/shared/utils/date';
 import { formatEventDate } from '@/shared/utils/format';
 
+import { useLogWorkoutCompletion } from '../hooks/useLogWorkoutCompletion';
 import { useReorderWorkout } from '../hooks/useReorderWorkout';
 import { useTrainingWeek } from '../hooks/useTrainingWeek';
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
@@ -135,6 +136,29 @@ function TimelineStep({
  * its `summary` line; manual entries (reports, reschedules) never have
  * one, so they render as a single line.
  *
+ * "Mark complete" (added 2026-09-06, alongside the training-load feature
+ * — see `lib/trainingLoad/`) is the first UI that ever writes
+ * `workout.status = 'completed'` anywhere in this app (see
+ * `workoutMapping.ts`'s own doc comment on why every workout was
+ * effectively stuck at `'past'`/`'upcoming'` before this). Logs Foster's
+ * session-RPE (a 1-10 effort rating times actual duration, not a power-
+ * or HR-based TSS — this app has no FTP/threshold-HR pipeline) via
+ * `useLogWorkoutCompletion`/`logWorkoutCompletion.ts`, into the
+ * `workout_completion` table. Offered for any non-rest workout that
+ * isn't already `'completed'` — both `'upcoming'` (logging ahead of an
+ * automated import ever catching it) and `'past'` (the honest
+ * "date passed, untracked" state this screen already renders a status
+ * badge for) — deliberately not restricted to today or to past dates
+ * only, since an athlete logging a session a day late is a normal use
+ * case this shouldn't block. Effort uses a tappable 1-10 chip row rather
+ * than a slider or free-text field — matches the bounded, discrete scale
+ * `workout_completion.perceived_effort`'s own CHECK constraint expects,
+ * and reads faster than typing a number. Duration prefills from
+ * `planned_duration_min` when the workout has one (the common case: it
+ * usually matches what was actually done) but stays editable, since
+ * "log what you planned" and "log what happened" aren't always the same
+ * thing.
+ *
  * The calendar note (added 2026-09-02) is the first UI to actually call
  * `google-calendar-freebusy` — the backend has existed since Google
  * Calendar connect shipped, but nothing read it until now (see
@@ -158,8 +182,13 @@ export function WorkoutDetailScreen() {
   const { data: weekData } = useTrainingWeek(athleteId);
   const { data: history } = useWorkoutHistory(id);
   const reorderWorkout = useReorderWorkout(athleteId);
+  const logCompletion = useLogWorkoutCompletion(athleteId);
   const [showMoveOptions, setShowMoveOptions] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [durationInput, setDurationInput] = useState('');
+  const [completeError, setCompleteError] = useState<string | null>(null);
   // Called unconditionally (rules of hooks) even though `data` isn't
   // known yet on the first render — the hook itself treats an undefined
   // `scheduledDate` as "nothing to check," same as a rest day below.
@@ -229,6 +258,39 @@ export function WorkoutDetailScreen() {
     data.workout.scheduled_date >= toIsoDate(weekStart) &&
     data.workout.scheduled_date <= weekEndIso;
   const canMove = !isRest && workout.status === 'upcoming' && isInCurrentWeek;
+  const canComplete = !isRest && (workout.status === 'upcoming' || workout.status === 'past');
+
+  const handleToggleCompleteForm = () => {
+    if (!showCompleteForm) {
+      setRpe(null);
+      setDurationInput(
+        data.workout.planned_duration_min != null ? String(data.workout.planned_duration_min) : '',
+      );
+      setCompleteError(null);
+    }
+    setShowCompleteForm((open) => !open);
+  };
+
+  const handleSaveCompletion = () => {
+    setCompleteError(null);
+    if (!rpe) {
+      setCompleteError('Rate how hard this felt (1-10) before saving.');
+      return;
+    }
+    const duration = Number(durationInput);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      setCompleteError('Enter how many minutes you actually trained.');
+      return;
+    }
+    if (!athleteId) return;
+    logCompletion.mutate(
+      { workoutId: data.workout.id, athleteId, perceivedEffort: rpe, actualDurationMin: duration },
+      {
+        onSuccess: () => setShowCompleteForm(false),
+        onError: () => setCompleteError('Couldn’t save that — try again.'),
+      },
+    );
+  };
 
   // Computed once (not per-render-branch) so a target's array index --
   // its real calendar date, `weekStart` + index, same recipe
@@ -377,6 +439,77 @@ export function WorkoutDetailScreen() {
             {zoneRows.length > 0 && (
               <View className="mt-lg border-t" style={{ borderColor: colors.border }}>
                 {zoneRows}
+              </View>
+            )}
+
+            {canComplete && (
+              <View className="mt-xl">
+                <Pressable onPress={handleToggleCompleteForm}>
+                  <AppText className="text-body-sm font-semibold text-accent">
+                    {showCompleteForm ? 'Cancel' : 'Mark complete'}
+                  </AppText>
+                </Pressable>
+
+                {showCompleteForm && (
+                  <View className="mt-md">
+                    <AppText className="mb-sm text-[13px] text-color-secondary">
+                      How hard did it feel? (1 easy – 10 max effort)
+                    </AppText>
+                    <View className="flex-row flex-wrap gap-xs">
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((value) => (
+                        <Pressable
+                          key={value}
+                          onPress={() => setRpe(value)}
+                          className="h-8 w-8 items-center justify-center rounded-full border"
+                          style={{
+                            borderColor: rpe === value ? colors.accent : colors['border-strong'],
+                            backgroundColor: rpe === value ? colors.accent : 'transparent',
+                          }}
+                        >
+                          <AppText
+                            mono
+                            className="text-[12px] font-semibold"
+                            style={{
+                              color: rpe === value ? colors.color.inverse : colors.color.primary,
+                            }}
+                          >
+                            {value}
+                          </AppText>
+                        </Pressable>
+                      ))}
+                    </View>
+
+                    <AppText className="mb-xs mt-md text-[13px] text-color-secondary">
+                      Actual duration (min)
+                    </AppText>
+                    <TextInput
+                      value={durationInput}
+                      onChangeText={setDurationInput}
+                      keyboardType="number-pad"
+                      placeholder="45"
+                      placeholderTextColor={colors.color.tertiary}
+                      className="border-b py-sm text-[15px] text-color-primary"
+                      style={{ borderColor: colors['border-strong'] }}
+                    />
+
+                    <Pressable
+                      onPress={handleSaveCompletion}
+                      disabled={logCompletion.isPending}
+                      className="mt-lg self-start rounded-full px-lg py-sm"
+                      style={{ backgroundColor: colors.accent }}
+                    >
+                      <AppText className="text-[13px] font-semibold text-color-inverse">
+                        {logCompletion.isPending ? 'Saving…' : 'Save'}
+                      </AppText>
+                    </Pressable>
+
+                    {completeError && (
+                      <AppText className="mt-sm text-caption-sm text-danger">
+                        {completeError}
+                      </AppText>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 

@@ -1,3 +1,4 @@
+import { fetchTrainingLoadHistory } from '@/lib/trainingLoad/fetchTrainingLoadHistory';
 import { supabase } from '@/lib/supabase/client';
 import { addDays, fromIsoDate, mondayOnOrBefore, toIsoDate } from '@/shared/utils/date';
 
@@ -14,20 +15,27 @@ export interface ProgressData {
    * in it has come due -- not a fabricated 0%.
    */
   weeklyConsistency: (number | null)[];
+  /**
+   * Weekly-sampled CTL ("fitness"), oldest first, from
+   * `fetchTrainingLoadHistory` -- see that file and `lib/trainingLoad/
+   * types.ts` for the Foster session-RPE methodology and why this can be
+   * shorter than 12 entries for an athlete who hasn't logged that long.
+   * Empty until the athlete has logged at least one workout completion.
+   */
+  weeklyFitness: number[];
 }
 
 /**
- * Progress's one real section (2026-09-01): consistency, computed from
- * real `workout.status`/`scheduled_date` values. Everything else on
- * this screen (fitness/fatigue trend, VO2 Max/FTP/threshold-pace/CSS-
- * pace stats, monthly mileage, personal records) has no real data
- * source in the schema at all -- the fitness trend is explicitly on
- * ROADMAP.md's postponed list (CTL/ATL/TSB-style dashboards), the
- * stats need a performance-test table that doesn't exist, mileage needs
- * a distance field `workout` doesn't have, and PRs need a tracking
- * table that doesn't exist either. `ProgressScreen.tsx` shows honest
- * "coming soon" notes for all of those rather than fetching or faking
- * anything for them.
+ * Progress's two real sections: consistency (`workout.status`/
+ * `scheduled_date`, since 2026-09-01) and, as of 2026-09-06, the fitness
+ * trend (`workout_completion`-derived CTL, see `lib/trainingLoad/`).
+ * Everything else on this screen (VO2 Max/FTP/threshold-pace/CSS-pace
+ * stats, monthly mileage, personal records) still has no real data
+ * source in the schema at all -- the stats need a performance-test
+ * table that doesn't exist, mileage needs a distance field `workout`
+ * doesn't have, and PRs need a tracking table that doesn't exist either.
+ * `ProgressScreen.tsx` shows honest "coming soon" notes for those rather
+ * than fetching or faking anything.
  */
 export async function fetchProgress(athleteId: string): Promise<ProgressData> {
   const today = new Date();
@@ -35,12 +43,17 @@ export async function fetchProgress(athleteId: string): Promise<ProgressData> {
   const windowStart = addDays(mondayOnOrBefore(today), -(WEEKS_IN_WINDOW - 1) * 7);
   const windowStartIso = toIsoDate(windowStart);
 
-  const { data, error } = await supabase
-    .from('workout')
-    .select('scheduled_date, status')
-    .eq('athlete_id', athleteId)
-    .gte('scheduled_date', windowStartIso)
-    .lte('scheduled_date', todayIso);
+  // Independent queries (different tables, no shared filters) -- run
+  // together rather than one after the other.
+  const [{ data, error }, { weeklyFitness }] = await Promise.all([
+    supabase
+      .from('workout')
+      .select('scheduled_date, status')
+      .eq('athlete_id', athleteId)
+      .gte('scheduled_date', windowStartIso)
+      .lte('scheduled_date', todayIso),
+    fetchTrainingLoadHistory(athleteId),
+  ]);
   if (error) throw error;
 
   const buckets: { total: number; completed: number }[] = Array.from(
@@ -65,5 +78,6 @@ export async function fetchProgress(athleteId: string): Promise<ProgressData> {
     weeklyConsistency: buckets.map((b) =>
       b.total > 0 ? Math.round((b.completed / b.total) * 100) : null,
     ),
+    weeklyFitness,
   };
 }

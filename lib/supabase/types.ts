@@ -1,7 +1,9 @@
 /**
  * Generated from the live Supabase schema (`mcp__Supabase__generate_typescript_types`)
  * against the `core_schema` + `waitlist_signups` + `adaptation_audit_schema` +
- * `wearable_schema` + `calendar_schema` migrations, plus the `waitlist_signups_by_day` view.
+ * `wearable_schema` + `calendar_schema` migrations, plus the `waitlist_signups_by_day` view,
+ * plus `workout_completion` (an untracked table discovered live 2026-09-06 — see
+ * docs/DATABASE.md's training-load section) and its `workout_completion_unique_workout` migration.
  * Regenerate after any schema migration — don't hand-edit.
  */
 
@@ -614,7 +616,7 @@ export type Database = {
           {
             foreignKeyName: 'workout_completion_workout_id_fkey';
             columns: ['workout_id'];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: 'workout';
             referencedColumns: ['id'];
           },
