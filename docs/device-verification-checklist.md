@@ -4,6 +4,8 @@ Everything below is real, shipped code that has only been `tsc`/`eslint`/`pretti
 
 Check off each row as you go (`[x]`) and note the actual result, not just pass/fail — "worked" vs. "worked but the badge flashed twice" are both useful, and this doc is meant to be updated in place, not rewritten.
 
+**Update (2026-09-06): plain Expo Go is no longer usable for any of this, not just section 1.** Expo Go only ever supports the current SDK, and it auto-updated to SDK 57 on the test device while Pace is pinned to SDK 54 — "Project is incompatible with this version of Expo Go." This isn't Pace-specific and isn't fixable by changing app code; it means every section below now needs the same custom dev client that section 1 already required for HealthKit, not just section 1. We're building that dev client now (Apple Developer Program + EAS Build, since there's no Mac available locally for a plain `expo run:ios`) — once it's installed, run `npx expo start --dev-client` and open the project through that installed app instead of Expo Go, and every section below applies exactly as written.
+
 ---
 
 ## 1. Apple HealthKit sync (resting HR + HRV)
