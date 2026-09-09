@@ -45,6 +45,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7aa1e95a-845f-4348-865d-0faf7bae38e1"
+      }
+    },
+    "owner": "hannes-lohses-team"
   }
 }
