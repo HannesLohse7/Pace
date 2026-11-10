@@ -166,10 +166,10 @@ export function GeneratingScreen() {
           if (raceError || !raceRow) {
             console.error('[onboarding] race insert failed:', raceError?.message);
           } else {
-            // Sprint/Olympic only for now -- generateTrainingPlan returns
-            // null for any other distance (70.3/Ironman/Custom), which is
-            // correct: there's no real plan template for those yet (see
-            // ROADMAP.md), so nothing is inserted rather than guessing.
+            // generateTrainingPlan covers Sprint, Olympic, 70.3 and Ironman.
+            // It returns null for 'other' (onboarding's "Custom"), which is
+            // correct: there's no template for an unspecified distance, so
+            // nothing is inserted rather than guessing.
             // This is also the only place today's availability answers
             // (weeklyHours/trainingDays/longWorkoutDay) get used -- there's
             // no `availability_rule` table yet to persist them separately,

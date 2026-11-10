@@ -6,7 +6,7 @@ export type WorkoutRow = Tables<'workout'>;
 
 export interface HomeDashboardData {
   athleteFirstName: string;
-  /** Null when the athlete has no active plan yet -- see generateTrainingPlan's own scope notes (Sprint/Olympic only, for now). */
+  /** Null when the athlete has no active plan yet -- see generateTrainingPlan's own scope notes (a "Custom" distance gets no plan). */
   plan: { startDate: string; endDate: string; weeks: number } | null;
   race: { name: string; raceDate: string } | null;
   todayWorkout: WorkoutRow | null;
