@@ -6,7 +6,7 @@ export type WorkoutRow = Tables<'workout'>;
 export type TrainingPhaseRow = Tables<'training_phase'>;
 
 export interface TrainingWeekData {
-  /** Null when the athlete has no active plan yet -- see generateTrainingPlan's own scope notes (Sprint/Olympic only, for now). */
+  /** Null when the athlete has no active plan yet -- see generateTrainingPlan's own scope notes (a "Custom" distance gets no plan). */
   plan: { id: string; startDate: string; endDate: string; weeks: number } | null;
   race: { name: string; raceDate: string } | null;
   /** Empty when there's no active plan yet. Ordered `sequence` ascending (Base -> Build -> Peak -> Taper). */
