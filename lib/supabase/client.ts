@@ -25,14 +25,24 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * Expo Router's static web output (`web.output: "static"` in app.json)
+ * pre-renders every route in Node, where there is no `window` — and
+ * AsyncStorage's web implementation reads `window.localStorage`, crashing
+ * the dev server. On that server pass there is no session to restore
+ * anyway, so skip storage and token refresh there; native and the browser
+ * always have `window` and keep the persistent behaviour below.
+ */
+const isServerRender = typeof window === 'undefined';
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     // AsyncStorage (not the default in-memory store) so a session survives
     // an app restart — without this every relaunch would sign the athlete
     // out.
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    storage: isServerRender ? undefined : AsyncStorage,
+    autoRefreshToken: !isServerRender,
+    persistSession: !isServerRender,
     // React Native has no URL bar for Supabase to read a session out of;
     // email-confirmation / magic-link redirects are handled via deep
     // linking instead (not yet wired — see docs/ROADMAP.md).

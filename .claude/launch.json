@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["expo", "start", "--web", "--port", "8117"],
       "port": 8117
+    },
+    {
+      "name": "expo-web-clear",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8117", "--clear"],
+      "port": 8117
     }
   ]
 }
