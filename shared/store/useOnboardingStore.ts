@@ -52,10 +52,25 @@ export interface OnboardingState {
   accountEmail: string;
   accountPassword: string;
   /**
-   * Set by the Generating screen when Supabase Auth rejects the signup
-   * (e.g. "email already registered") — read by the Account screen so
-   * the athlete sees why they were sent back, instead of the flow
-   * silently resetting to step one.
+   * True once `supabase.auth.signUp()` has actually succeeded for the
+   * account fields currently held above (set by `AccountScreen.tsx`,
+   * moved there 2026-09-09 -- see its own doc comment). Lets Account's
+   * Continue handler skip re-calling `signUp()` when the athlete backs
+   * up to this step and taps Continue again without changing anything
+   * -- without this, that would send the SAME email/password to
+   * `signUp()` a second time and come back as a false "already
+   * registered" on the athlete's own just-created account.
+   * `setAccountName`/`setAccountEmail`/`setAccountPassword` all reset
+   * this back to `false`, so editing any of the three after a
+   * successful signup correctly forces a fresh attempt next time.
+   */
+  accountCreated: boolean;
+  /**
+   * Set by the Account screen when Supabase Auth rejects the signup
+   * (e.g. "email already registered"). Surfaces immediately, on the
+   * same screen, rather than after the rest of onboarding plays out —
+   * see `AccountScreen.tsx`'s doc comment (moved here from the
+   * Generating screen 2026-09-09).
    */
   authError: string | null;
 
@@ -84,6 +99,7 @@ export interface OnboardingActions {
   setAccountName: (name: string) => void;
   setAccountEmail: (email: string) => void;
   setAccountPassword: (password: string) => void;
+  setAccountCreated: (created: boolean) => void;
   setAuthError: (message: string | null) => void;
 
   selectGoal: (goal: OnboardingGoal) => void;
@@ -116,6 +132,7 @@ const initialState: OnboardingState = {
   accountName: '',
   accountEmail: '',
   accountPassword: '',
+  accountCreated: false,
   authError: null,
   goal: null,
   raceName: '',
@@ -150,9 +167,10 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     set({ step: ONBOARDING_STEPS[prevIndex] });
   },
 
-  setAccountName: (accountName) => set({ accountName }),
-  setAccountEmail: (accountEmail) => set({ accountEmail }),
-  setAccountPassword: (accountPassword) => set({ accountPassword }),
+  setAccountName: (accountName) => set({ accountName, accountCreated: false }),
+  setAccountEmail: (accountEmail) => set({ accountEmail, accountCreated: false }),
+  setAccountPassword: (accountPassword) => set({ accountPassword, accountCreated: false }),
+  setAccountCreated: (accountCreated) => set({ accountCreated }),
   setAuthError: (authError) => set({ authError }),
 
   selectGoal: (goal) => set({ goal }),

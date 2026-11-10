@@ -17,6 +17,14 @@ export interface OnboardingStepShellProps {
   canContinue?: boolean;
   onInvalidContinue?: () => void;
   /**
+   * Overrides what a valid Continue tap does, in place of the shell's
+   * own default `goNext()`. Added 2026-09-09 for Account, the one step
+   * whose Continue needs to do something (create the real Supabase
+   * account) before it's safe to advance — every other step leaves
+   * this unset and keeps the plain `goNext()` behavior.
+   */
+  onContinue?: () => void;
+  /**
    * Renders the default fixed-footer Continue button (spacer-pinned to
    * the bottom) after children. Set false when the screen renders its
    * own OnboardingContinueButton itself instead — e.g. Availability
@@ -46,6 +54,7 @@ export function OnboardingStepShell({
   children,
   canContinue = true,
   onInvalidContinue,
+  onContinue,
   showFooter = true,
   footerExtra,
 }: OnboardingStepShellProps) {
@@ -68,7 +77,7 @@ export function OnboardingStepShell({
             <View className="flex-1" />
             <OnboardingContinueButton
               label={continueLabel}
-              goNext={goNext}
+              goNext={onContinue ?? goNext}
               canContinue={canContinue}
               onInvalidContinue={onInvalidContinue}
             />

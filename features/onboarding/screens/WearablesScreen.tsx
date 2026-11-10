@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { useConnectAppleHealth } from '@/features/wearables/hooks/useConnectAppleHealth';
-import { useSession } from '@/lib/supabase/useSession';
+import { useRequestAppleHealthAuthorization } from '@/features/wearables/hooks/useRequestAppleHealthAuthorization';
 import { AppText } from '@/shared/components';
 import { useOnboardingStore } from '@/shared/store';
 import type { WearableConnections } from '@/shared/store';
@@ -20,16 +19,12 @@ const WEARABLE_DEFS: { key: keyof WearableConnections; name: string; benefit: st
   { key: 'zwift', name: 'Zwift', benefit: 'Sends structured indoor rides' },
 ];
 
-function appleHealthErrorMessage(
-  reason: 'unavailable' | 'authorization_denied' | 'write_failed',
-): string {
+function appleHealthErrorMessage(reason: 'unavailable' | 'authorization_denied'): string {
   switch (reason) {
     case 'unavailable':
       return 'Apple Health isn’t available on this device.';
     case 'authorization_denied':
       return 'Permission wasn’t granted — you can allow it later in iOS Settings.';
-    case 'write_failed':
-      return 'Connected, but saving your data failed — try again.';
   }
 }
 
@@ -47,22 +42,34 @@ function appleHealthErrorMessage(
  * other four are still exactly what they've always been** — a local
  * `useOnboardingStore` boolean with no real connection behind it
  * (Garmin/COROS/Strava/Zwift integrations don't exist yet). Tapping
- * Apple Health's badge now requests a real HealthKit read-authorization
- * prompt and, on success, syncs recent resting-HR/HRV data via
- * `useConnectAppleHealth` — only then does it flip to "Connected," so
- * the badge never claims a permission that wasn't actually granted. No
- * real "disconnect" here (HealthKit permissions can only be revoked in
- * iOS Settings, not by an app) — once really connected, tapping again
- * is a no-op, unlike the other four rows, which still freely toggle
- * on/off since they're not backed by anything real to begin with.
+ * Apple Health's badge requests a real HealthKit read-authorization
+ * prompt; on success it flips to "Connected" and sets
+ * `wearables.appleHealth` in the store, so the badge never claims a
+ * permission that wasn't actually granted. No real "disconnect" here
+ * (HealthKit permissions can only be revoked in iOS Settings, not by an
+ * app) — once really connected, tapping again is a no-op, unlike the
+ * other four rows, which still freely toggle on/off since they're not
+ * backed by anything real to begin with.
+ *
+ * **This screen only requests permission — it never writes to
+ * Supabase (fixed 2026-09-09, first real-device test).** This step
+ * runs before any real athlete session exists (`generating`, the step
+ * that actually calls `supabase.auth.signUp()`, comes right after this
+ * one), so a Supabase write attempted here would always fail with no
+ * `athleteId` — confirmed on a real device, not hypothetical. The real
+ * sync (fetching recent resting-HR/HRV and writing
+ * `wearable_connection`/`recovery_signal`) now happens once,
+ * automatically, from `GeneratingScreen.tsx`, gated on the
+ * `wearables.appleHealth` flag this screen sets. See
+ * `requestAppleHealthAuthorization`'s own doc comment in
+ * `lib/wearables/syncAppleHealthRecoverySignals.ts` for the full story.
  */
 export function WearablesScreen() {
   const wearables = useOnboardingStore((s) => s.wearables);
   const toggleWearable = useOnboardingStore((s) => s.toggleWearable);
   const { goNext } = useOnboardingNavigation('wearables');
 
-  const { session } = useSession();
-  const connectAppleHealth = useConnectAppleHealth(session?.user.id);
+  const requestAppleHealth = useRequestAppleHealthAuthorization();
   const [appleHealthError, setAppleHealthError] = useState<string | null>(null);
 
   const handlePress = (key: keyof WearableConnections) => {
@@ -70,10 +77,10 @@ export function WearablesScreen() {
       toggleWearable(key);
       return;
     }
-    if (wearables.appleHealth || connectAppleHealth.isPending) return;
+    if (wearables.appleHealth || requestAppleHealth.isPending) return;
 
     setAppleHealthError(null);
-    connectAppleHealth.mutate(undefined, {
+    requestAppleHealth.mutate(undefined, {
       onSuccess: (result) => {
         if (result.ok) {
           toggleWearable('appleHealth');
@@ -81,7 +88,7 @@ export function WearablesScreen() {
           setAppleHealthError(appleHealthErrorMessage(result.reason));
         }
       },
-      onError: () => setAppleHealthError(appleHealthErrorMessage('write_failed')),
+      onError: () => setAppleHealthError(appleHealthErrorMessage('unavailable')),
     });
   };
 

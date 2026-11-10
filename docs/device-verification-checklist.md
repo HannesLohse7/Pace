@@ -48,7 +48,7 @@ Check off each row as you go (`[x]`) and note the actual result, not just pass/f
 
 ## 3. Profile "Sign Out" redirect
 
-**Why this matters**: it calls `supabase.auth.signOut()` then explicitly `router.replace('/')` — the explicit redirect matters because nothing else re-checks session state once mounted (the tabs layout has no session guard; only root `app/index.tsx` does). If this is wrong, a signed-out athlete could get stuck looking at a dead tab bar instead of landing on onboarding/sign-in.
+**Why this matters**: `ProfileScreen.tsx` only calls `supabase.auth.signOut()` — the actual redirect is owned by `app/(tabs)/_layout.tsx`'s own `useSession()`-driven guard, which calls `router.replace('/')` once session goes null (this replaced an earlier version of this note, which said only root `app/index.tsx` guarded session — that was true before the sign-out bug fixes, not after). If this is wrong, a signed-out athlete could get stuck looking at a dead tab bar instead of landing on onboarding/sign-in — this is exactly the bug the last several fix rounds chased, so this section is the one most worth re-verifying carefully rather than rubber-stamping.
 
 **Steps:**
 1. [ ] Sign in normally, land in the tab bar
@@ -72,6 +72,20 @@ Check off each row as you go (`[x]`) and note the actual result, not just pass/f
 5. [ ] Log completions for at least 2 different days, then open Progress — confirm the "FITNESS TREND" section switches from the "log your first workout" note to an actual chart once there are 2+ weekly points (a single day's log within the current week may not be enough — see `MIN_FITNESS_POINTS` in `buildProgressViewModel.ts`)
 6. [ ] In Supabase, spot-check one `workout_completion` row's `actual_tss` equals `actual_duration_min × perceived_effort` for what you entered
 7. [ ] Try marking the same workout complete a second time via two rapid taps (double-tap Save) — confirm it doesn't create a duplicate `workout_completion` row (the `unique(workout_id)` constraint should reject the second insert; confirm the UI shows a reasonable error rather than a silent hang)
+
+---
+
+## 5. Onboarding: duplicate-email check (new, added 2026-09-09)
+
+**Why this is here**: account creation (`supabase.auth.signUp`) used to happen on the last onboarding screen (Generating), so a duplicate email wasn't caught until the athlete had already filled out the entire flow. It now happens right after the Account step, so this needs to be re-verified against a real Supabase project, not just read as code.
+
+**Steps:**
+1. [ ] Start onboarding, enter an email that's already registered (any account still in Supabase) on the Account step, tap Continue
+2. [ ] Confirm the error shows immediately on the Account step itself — not several screens later on Generating
+3. [ ] Confirm the error message is legible/honest (via `describeAuthError.ts`), not a raw Supabase error string
+4. [ ] Fix the email and continue — confirm signup succeeds and the flow proceeds normally
+5. [ ] Back up to Account from a later step (Goal/Race/etc.) without changing anything, tap Continue again — confirm it does NOT try to re-run signup and error as "already registered" against the account you just created (`accountCreated` flag in `useOnboardingStore` guards this)
+6. [ ] Back up to Account and actually change the email/password, tap Continue — confirm it DOES attempt signup again (the store resets `accountCreated` on any field edit)
 
 ---
 

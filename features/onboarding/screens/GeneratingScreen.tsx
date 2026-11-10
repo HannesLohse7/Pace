@@ -5,6 +5,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { generateTrainingPlan } from '@/lib/planGenerator/generatePlan';
 import { supabase } from '@/lib/supabase/client';
+import { syncAppleHealthRecoverySignals } from '@/lib/wearables/syncAppleHealthRecoverySignals';
 import { AppText, Screen } from '@/shared/components';
 import { useOnboardingStore } from '@/shared/store';
 import { useThemeColors } from '@/shared/theme/ThemeProvider';
@@ -24,18 +25,6 @@ const GOAL_TO_RACE_DISTANCE: Record<string, string> = {
   Ironman: 'ironman',
   Custom: 'other',
 };
-
-/**
- * Turns a Supabase Auth error into copy an athlete can act on, without
- * leaking implementation detail for the cases that matter (a duplicate
- * email is the one an athlete will actually hit while testing this).
- */
-function describeAuthError(message: string): string {
-  if (/already registered|already exists|already been registered/i.test(message)) {
-    return 'An account with this email already exists.';
-  }
-  return message;
-}
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -88,6 +77,16 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
  * opacity are) in either Animated implementation, so this isn't a
  * shortcut — there's no native-driver-eligible version of this specific
  * animation to opt into.
+ *
+ * **No longer creates the Supabase account itself** (moved to
+ * `AccountScreen.tsx`, 2026-09-09, real-device test) — a duplicate
+ * email needs to fail immediately on the Account step, not after the
+ * rest of onboarding plays out. This screen just reads the session
+ * Account already established and finishes provisioning (the
+ * `athlete_profile` row, the wearables sync, and race/plan/phase/
+ * workout rows once goal/race/availability are known — none of that
+ * could happen any earlier since it depends on answers from steps
+ * after Account).
  */
 export function GeneratingScreen() {
   useOnboardingNavigation('generating');
@@ -98,50 +97,48 @@ export function GeneratingScreen() {
 
   const accountName = useOnboardingStore((s) => s.accountName);
   const accountEmail = useOnboardingStore((s) => s.accountEmail);
-  const accountPassword = useOnboardingStore((s) => s.accountPassword);
   const goal = useOnboardingStore((s) => s.goal);
   const raceName = useOnboardingStore((s) => s.raceName);
   const raceDate = useOnboardingStore((s) => s.raceDate);
   const weeklyHours = useOnboardingStore((s) => s.weeklyHours);
   const trainingDays = useOnboardingStore((s) => s.trainingDays);
   const longWorkoutDay = useOnboardingStore((s) => s.longWorkoutDay);
-  const setAuthError = useOnboardingStore((s) => s.setAuthError);
+  const wearables = useOnboardingStore((s) => s.wearables);
 
-  // 'pending' while the real signup call is in flight, 'ready' once the
-  // athlete has an account worth landing them in the app for, 'error'
-  // once we've already redirected back to /account — the final-message
-  // timer below must not also try to navigate in that case.
-  const [accountOutcome, setAccountOutcome] = useState<'pending' | 'ready' | 'error'>('pending');
+  // 'pending' while provisioning is in flight, 'ready' once the athlete
+  // has something worth landing them in the app for -- the final-
+  // message timer below waits on this before navigating to (tabs).
+  const [accountOutcome, setAccountOutcome] = useState<'pending' | 'ready'>('pending');
   const [isAnimationDone, setIsAnimationDone] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function createAccount() {
-      const { data, error } = await supabase.auth.signUp({
-        email: accountEmail,
-        password: accountPassword,
-        options: { data: { display_name: accountName } },
-      });
-
+    async function provisionAthlete() {
+      // The real signup already happened back on the Account step --
+      // this reads that session rather than creating it. `getSession()`
+      // reads the locally-cached session (no network round trip), so
+      // this resolves immediately in the normal case.
+      const { data: sessionData } = await supabase.auth.getSession();
       if (cancelled) return;
 
-      if (error) {
-        setAuthError(describeAuthError(error.message));
-        setAccountOutcome('error');
-        router.replace('/account');
+      const user = sessionData.session?.user;
+      if (!user) {
+        // No session despite Account's signUp succeeding -- either this
+        // Supabase project requires email confirmation (a real account
+        // exists, but this device can't write RLS-protected rows
+        // (athlete_profile, race) until it holds a session, and there's
+        // no sign-in screen yet to obtain one -- see docs/ROADMAP.md's
+        // status note) or something cleared the session between steps.
+        // Either way there's no user id to provision against, so land
+        // the athlete in the app rather than getting stuck here --
+        // `app/index.tsx` already tolerates a session with no
+        // `athlete_profile` row.
+        if (!cancelled) setAccountOutcome('ready');
         return;
       }
 
-      // No session yet means the project requires email confirmation —
-      // there's a real Supabase Auth account now, but this device can't
-      // write RLS-protected rows (athlete_profile, race) until it holds
-      // a session, and there's no sign-in screen yet to obtain one. See
-      // docs/ROADMAP.md's status note: profile/race provisioning is
-      // deferred until that sign-in flow exists, tracked there rather
-      // than silently skipped.
-      const user = data.user;
-      if (data.session && user) {
+      {
         const { error: profileError } = await supabase.from('athlete_profile').insert({
           id: user.id,
           display_name: accountName,
@@ -150,89 +147,111 @@ export function GeneratingScreen() {
         });
         if (profileError) {
           console.error('[onboarding] athlete_profile insert failed:', profileError.message);
-        } else if (goal && raceName.trim() && raceDate) {
-          const raceDistance = GOAL_TO_RACE_DISTANCE[goal] ?? 'other';
-          const { data: raceRow, error: raceError } = await supabase
-            .from('race')
-            .insert({
-              athlete_id: user.id,
-              name: raceName.trim(),
-              race_date: raceDate,
-              distance: raceDistance,
-            })
-            .select()
-            .single();
-
-          if (raceError || !raceRow) {
-            console.error('[onboarding] race insert failed:', raceError?.message);
-          } else {
-            // generateTrainingPlan covers Sprint, Olympic, 70.3 and Ironman.
-            // It returns null for 'other' (onboarding's "Custom"), which is
-            // correct: there's no template for an unspecified distance, so
-            // nothing is inserted rather than guessing.
-            // This is also the only place today's availability answers
-            // (weeklyHours/trainingDays/longWorkoutDay) get used -- there's
-            // no `availability_rule` table yet to persist them separately,
-            // so a plan can only be generated right here, while they're
-            // still in memory from onboarding.
-            const plan = generateTrainingPlan({
-              raceDistance,
-              raceDate,
-              startDate: toIsoDate(new Date()),
-              weeklyHours,
-              trainingDays,
-              longWorkoutDay,
-            });
-
-            if (plan) {
-              if (plan.warnings.length > 0) {
-                console.warn('[onboarding] plan generation warnings:', plan.warnings);
+        } else {
+          // Real athlete session exists from this point on -- the one
+          // moment `syncAppleHealthRecoverySignals` can actually write.
+          // Gated on the store flag `WearablesScreen.tsx` set after a
+          // real HealthKit authorization grant (2026-09-09 fix -- see
+          // that screen's own doc comment: attempting this write earlier,
+          // during onboarding's Wearables step, always failed with no
+          // signed-in athlete yet). Best-effort, same as every other
+          // write in this effect -- a sync failure here shouldn't block
+          // account creation or plan generation below.
+          if (wearables.appleHealth) {
+            try {
+              const result = await syncAppleHealthRecoverySignals(user.id);
+              if (!result.ok) {
+                console.error('[onboarding] Apple Health sync failed:', result.reason);
               }
-              const { data: planRow, error: planError } = await supabase
-                .from('training_plan')
-                .insert({
-                  athlete_id: user.id,
-                  race_id: raceRow.id,
-                  start_date: plan.startDate,
-                  end_date: plan.endDate,
-                  weeks: plan.weeks,
-                  status: 'active',
-                })
-                .select()
-                .single();
+            } catch (err) {
+              console.error('[onboarding] Apple Health sync threw:', err);
+            }
+          }
 
-              if (planError || !planRow) {
-                console.error('[onboarding] training_plan insert failed:', planError?.message);
-              } else {
-                const { error: phaseError } = await supabase.from('training_phase').insert(
-                  plan.phases.map((phase) => ({
-                    training_plan_id: planRow.id,
-                    athlete_id: user.id,
-                    name: phase.name,
-                    sequence: phase.sequence,
-                    start_date: phase.startDate,
-                    end_date: phase.endDate,
-                  })),
-                );
-                if (phaseError) {
-                  console.error('[onboarding] training_phase insert failed:', phaseError.message);
+          if (goal && raceName.trim() && raceDate) {
+            const raceDistance = GOAL_TO_RACE_DISTANCE[goal] ?? 'other';
+            const { data: raceRow, error: raceError } = await supabase
+              .from('race')
+              .insert({
+                athlete_id: user.id,
+                name: raceName.trim(),
+                race_date: raceDate,
+                distance: raceDistance,
+              })
+              .select()
+              .single();
+
+            if (raceError || !raceRow) {
+              console.error('[onboarding] race insert failed:', raceError?.message);
+            } else {
+              // generateTrainingPlan covers Sprint, Olympic, 70.3 and Ironman.
+              // It returns null for 'other' (onboarding's "Custom"), which is
+              // correct: there's no template for an unspecified distance, so
+              // nothing is inserted rather than guessing.
+              // This is also the only place today's availability answers
+              // (weeklyHours/trainingDays/longWorkoutDay) get used -- there's
+              // no `availability_rule` table yet to persist them separately,
+              // so a plan can only be generated right here, while they're
+              // still in memory from onboarding.
+              const plan = generateTrainingPlan({
+                raceDistance,
+                raceDate,
+                startDate: toIsoDate(new Date()),
+                weeklyHours,
+                trainingDays,
+                longWorkoutDay,
+              });
+
+              if (plan) {
+                if (plan.warnings.length > 0) {
+                  console.warn('[onboarding] plan generation warnings:', plan.warnings);
                 }
-
-                const { error: workoutError } = await supabase.from('workout').insert(
-                  plan.workouts.map((workout) => ({
-                    training_plan_id: planRow.id,
+                const { data: planRow, error: planError } = await supabase
+                  .from('training_plan')
+                  .insert({
                     athlete_id: user.id,
-                    scheduled_date: workout.scheduledDate,
-                    discipline: workout.discipline,
-                    title: workout.title,
-                    planned_duration_min: workout.plannedDurationMin,
-                    intensity: workout.intensity,
-                    description: workout.description,
-                    status: 'planned',
-                  })),
-                );
-                if (workoutError) {
-                  console.error('[onboarding] workout insert failed:', workoutError.message);
+                    race_id: raceRow.id,
+                    start_date: plan.startDate,
+                    end_date: plan.endDate,
+                    weeks: plan.weeks,
+                    status: 'active',
+                  })
+                  .select()
+                  .single();
+
+                if (planError || !planRow) {
+                  console.error('[onboarding] training_plan insert failed:', planError?.message);
+                } else {
+                  const { error: phaseError } = await supabase.from('training_phase').insert(
+                    plan.phases.map((phase) => ({
+                      training_plan_id: planRow.id,
+                      athlete_id: user.id,
+                      name: phase.name,
+                      sequence: phase.sequence,
+                      start_date: phase.startDate,
+                      end_date: phase.endDate,
+                    })),
+                  );
+                  if (phaseError) {
+                    console.error('[onboarding] training_phase insert failed:', phaseError.message);
+                  }
+
+                  const { error: workoutError } = await supabase.from('workout').insert(
+                    plan.workouts.map((workout) => ({
+                      training_plan_id: planRow.id,
+                      athlete_id: user.id,
+                      scheduled_date: workout.scheduledDate,
+                      discipline: workout.discipline,
+                      title: workout.title,
+                      planned_duration_min: workout.plannedDurationMin,
+                      intensity: workout.intensity,
+                      description: workout.description,
+                      status: 'planned',
+                    })),
+                  );
+                  if (workoutError) {
+                    console.error('[onboarding] workout insert failed:', workoutError.message);
+                  }
                 }
               }
             }
@@ -243,7 +262,7 @@ export function GeneratingScreen() {
       if (!cancelled) setAccountOutcome('ready');
     }
 
-    createAccount();
+    provisionAthlete();
     return () => {
       cancelled = true;
     };

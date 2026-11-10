@@ -18,6 +18,36 @@ export type SyncAppleHealthResult =
   | { ok: true; daysSynced: number }
   | { ok: false; reason: 'unavailable' | 'authorization_denied' | 'write_failed' };
 
+export type RequestAppleHealthAuthResult =
+  { ok: true } | { ok: false; reason: 'unavailable' | 'authorization_denied' };
+
+/**
+ * Permission-only half of the Apple Health flow — no Supabase write.
+ * Added 2026-09-09, first real-device test: onboarding's Wearables step
+ * runs *before* any real athlete session exists (`wearables` sits right
+ * before `generating` in `ONBOARDING_STEPS`, and the real
+ * `supabase.auth.signUp()` call only happens inside `GeneratingScreen.tsx`,
+ * the very next and last step) — so calling the full
+ * `syncAppleHealthRecoverySignals` from onboarding always failed at its
+ * write step with no `athleteId`, 100% of the time, confirmed on a real
+ * device. `WearablesScreen.tsx` now calls this instead: it only asks for
+ * HealthKit read access and remembers a "yes" in `useOnboardingStore`'s
+ * `wearables.appleHealth`. The real sync — the only step that needs a
+ * signed-in athlete — runs once, automatically, from
+ * `GeneratingScreen.tsx`, right after the real `athlete_profile` row
+ * exists.
+ */
+export async function requestAppleHealthAuthorization(): Promise<RequestAppleHealthAuthResult> {
+  const available = await isAppleHealthAvailable();
+  if (!available) return { ok: false, reason: 'unavailable' };
+  try {
+    await requestAppleHealthReadAccess();
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'authorization_denied' };
+  }
+}
+
 /**
  * Connects (or re-syncs) Apple Health as a recovery-signal source for
  * one athlete: requests read authorization for resting heart rate and
@@ -26,10 +56,13 @@ export type SyncAppleHealthResult =
  * `wearable_connection` row recording the connection. Sleep isn't
  * synced yet — see `healthKitAdapter.ts`'s doc comment for why.
  *
- * Called from `features/wearables/hooks/useConnectAppleHealth.ts`, the
- * one entry point both onboarding's Wearables step and (in the future)
- * Profile use — this function itself has no UI/React dependency, same
- * "pure orchestration function, thin hook on top" split as
+ * Called directly from `GeneratingScreen.tsx` (2026-09-09, moved there
+ * from onboarding's Wearables step — see `requestAppleHealthAuthorization`
+ * below for why) once a real athlete session exists, and from
+ * `features/wearables/hooks/useConnectAppleHealth.ts` for Profile's
+ * future reuse (not wired there yet — see docs/ROADMAP.md). This
+ * function itself has no UI/React dependency, same "pure orchestration
+ * function, thin hook on top" split as
  * `lib/adaptation/engine/adaptAfterMissedWorkout.ts`.
  *
  * Returns a reason rather than throwing for the two expected failure

@@ -38,7 +38,15 @@ export function ProgressScreen() {
   const athleteId = session?.user.id;
   const { data, isLoading, isFetching, isError, refetch } = useProgress(athleteId);
 
-  if (isLoading) {
+  // `!athleteId` covers the moment session goes null (sign-out, or a
+  // token that expired mid-session) -- the query is disabled rather
+  // than errored in that case (see `useProgress`'s `enabled`), so
+  // without this it fell through to the `isError || !data` branch
+  // below and showed a "couldn't load, try again" message for a state
+  // that isn't a fetch failure at all. `(tabs)/_layout.tsx`'s guard is
+  // about to navigate away regardless -- this just keeps that instant
+  // honest (still loading) instead of scary (something broke).
+  if (isLoading || !athleteId) {
     return (
       <Screen edges={['top', 'bottom']} className="items-center justify-center">
         <ActivityIndicator color={colors.accent} />
